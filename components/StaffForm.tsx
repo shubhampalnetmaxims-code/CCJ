@@ -174,9 +174,12 @@ const StaffForm: React.FC<StaffFormProps> = ({ warehouses, initialData, onAdd, o
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 bg-white border border-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all active:scale-[0.99]"
+          className="flex-1 bg-white border border-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all active:scale-[0.99] flex items-center justify-center gap-2"
         >
-          Discard
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
         </button>
         <button
           type="submit"

@@ -31,7 +31,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
-  const [partData, setPartData] = useState<Omit<Part, 'id' | 'warehouseId'>>({ name: '', partId: '', quantity: 0 });
+  const [partData, setPartData] = useState<Omit<Part, 'id' | 'warehouseId'>>({ name: '', partId: '', quantity: 0, threshold: 0 });
   const [machineData, setMachineData] = useState<Omit<Machine, 'id' | 'warehouseId'>>({ 
     name: '', serialNumber: '', class: 'Skill', condition: 'New' 
   });
@@ -39,11 +39,11 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   const handleOpenForm = (item: any = null) => {
     if (item) {
       setEditingItem(item);
-      if (activeTab === 'parts') setPartData({ name: item.name, partId: item.partId, quantity: item.quantity });
+      if (activeTab === 'parts') setPartData({ name: item.name, partId: item.partId, quantity: item.quantity, threshold: item.threshold ?? 0 });
       else setMachineData({ name: item.name, serialNumber: item.serialNumber, class: item.class, condition: item.condition });
     } else {
       setEditingItem(null);
-      setPartData({ name: '', partId: '', quantity: 0 });
+      setPartData({ name: '', partId: '', quantity: 0, threshold: 0 });
       setMachineData({ name: '', serialNumber: '', class: 'Skill', condition: 'New' });
     }
     setIsFormOpen(true);
@@ -69,8 +69,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
       const file = e.target.files[0];
       if (file) {
         alert(`Simulating bulk upload for "${file.name}"... Parsing rows into inventory.`);
-        // In a real app, logic for CSV parsing would go here.
-        onAddPart({ name: 'Imported Bearing X', partId: 'IMP-900', quantity: 100, warehouseId: warehouse.id });
+        onAddPart({ name: 'Imported Bearing X', partId: 'IMP-900', quantity: 100, threshold: 10, warehouseId: warehouse.id });
       }
     };
     input.click();
@@ -83,10 +82,10 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
         <div>
           <button 
             onClick={onBack}
-            className="group flex items-center gap-2 text-indigo-600 font-bold text-sm mb-2 hover:translate-x-[-4px] transition-all"
+            className="group flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-indigo-600 font-bold text-sm mb-4 hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Network
           </button>
@@ -122,7 +121,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
       </div>
 
       {/* Segmented Controller */}
-      <div className="bg-gray-100 p-1.5 rounded-3xl inline-flex gap-1">
+      <div className="bg-gray-100 p-1.5 rounded-3xl inline-flex gap-1 shadow-inner">
         <button
           onClick={() => setActiveTab('parts')}
           className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'parts' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
@@ -147,23 +146,35 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Part Identity</th>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Part Code</th>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">In Stock</th>
+                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Threshold</th>
                   <th className="px-8 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {parts.map(p => (
-                  <tr key={p.id} className="hover:bg-indigo-50/30 transition-colors">
-                    <td className="px-8 py-5 font-bold text-gray-900">{p.name}</td>
-                    <td className="px-8 py-5 font-mono text-sm text-indigo-600 font-bold bg-indigo-50/30 rounded-lg">{p.partId}</td>
-                    <td className="px-8 py-5">
-                      <span className={`font-black ${p.quantity < 5 ? 'text-red-500' : 'text-gray-600'}`}>{p.quantity} Units</span>
-                    </td>
-                    <td className="px-8 py-5 text-right space-x-4">
-                      <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold">Edit</button>
-                      <button onClick={() => onDeletePart(p.id)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">Delete</button>
-                    </td>
-                  </tr>
-                ))}
+                {parts.map(p => {
+                  const isLow = p.threshold !== undefined && p.quantity <= p.threshold;
+                  return (
+                    <tr key={p.id} className={`transition-colors ${isLow ? 'bg-amber-50/40 hover:bg-amber-50/60' : 'hover:bg-indigo-50/30'}`}>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{p.name}</span>
+                          {isLow && (
+                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black uppercase rounded-md animate-pulse">Low Stock</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 font-mono text-sm text-indigo-600 font-bold bg-indigo-50/30 rounded-lg">{p.partId}</td>
+                      <td className="px-8 py-5">
+                        <span className={`font-black ${isLow ? 'text-amber-600' : 'text-gray-600'}`}>{p.quantity} Units</span>
+                      </td>
+                      <td className="px-8 py-5 text-gray-400 font-bold text-sm">{p.threshold ?? 0}</td>
+                      <td className="px-8 py-5 text-right space-x-4">
+                        <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold">Edit</button>
+                        <button onClick={() => onDeletePart(p.id)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">Delete</button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -228,6 +239,11 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                       <input type="number" required value={partData.quantity} onChange={e => setPartData({...partData, quantity: parseInt(e.target.value)})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Minimum Threshold</label>
+                    <input type="number" required value={partData.threshold} onChange={e => setPartData({...partData, threshold: parseInt(e.target.value)})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
+                    <p className="text-[10px] text-gray-400 mt-1 pl-1 italic">Triggers visual alerts when stock falls to or below this level.</p>
+                  </div>
                 </>
               ) : (
                 <>
@@ -262,7 +278,16 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
             </div>
 
             <div className="flex gap-4 mt-10">
-              <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 py-5 border border-gray-200 rounded-3xl font-black text-gray-400 hover:bg-gray-50 transition-all">Cancel</button>
+              <button 
+                type="button" 
+                onClick={() => setIsFormOpen(false)} 
+                className="flex-1 py-5 border border-gray-200 rounded-3xl font-black text-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+              </button>
               <button type="submit" className="flex-2 bg-indigo-600 text-white py-5 rounded-3xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]">
                 {editingItem ? 'Save Updates' : 'Confirm Registration'}
               </button>

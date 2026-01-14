@@ -13,6 +13,7 @@ export interface Part {
   name: string;
   partId: string;
   quantity: number;
+  threshold?: number; // Added threshold for stock alerts
 }
 
 export interface Machine {

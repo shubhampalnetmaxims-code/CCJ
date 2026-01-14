@@ -23,8 +23,8 @@ const App: React.FC = () => {
   ]);
 
   const [parts, setParts] = useState<Part[]>([
-    { id: 'p1', warehouseId: '1', name: 'PCB Mainboard V2', partId: 'PART-001', quantity: 15 },
-    { id: 'p2', warehouseId: '1', name: 'Coin Acceptor Mech', partId: 'PART-002', quantity: 42 }
+    { id: 'p1', warehouseId: '1', name: 'PCB Mainboard V2', partId: 'PART-001', quantity: 15, threshold: 5 },
+    { id: 'p2', warehouseId: '1', name: 'Coin Acceptor Mech', partId: 'PART-002', quantity: 3, threshold: 10 }
   ]);
 
   const [machines, setMachines] = useState<Machine[]>([
@@ -89,7 +89,14 @@ const App: React.FC = () => {
     return (
       <MobileFrame onExit={handleExitEmulation}>
         {!user ? <Login onLogin={handleLogin} staffMembers={staffMembers} isMobileView={true} /> : 
-        <MobileDashboard user={user} warehouses={warehouses} onLogout={handleLogout} />}
+        <MobileDashboard 
+          user={user} 
+          warehouses={warehouses} 
+          parts={parts}
+          machines={machines}
+          onUpdatePart={updatePart}
+          onLogout={handleLogout} 
+        />}
       </MobileFrame>
     );
   }
