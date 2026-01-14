@@ -7,35 +7,29 @@ import WarehouseList from './components/WarehouseList';
 import StaffList from './components/StaffList';
 import MobileDashboard from './components/MobileDashboard';
 import MobileFrame from './components/MobileFrame';
-import { User, View, Warehouse, StaffMember } from './types';
+import WarehouseInventoryDetail from './components/WarehouseInventoryDetail';
+import { User, View, Warehouse, StaffMember, Part, Machine } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('warehouses');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
   const [isEmulatingMobile, setIsEmulatingMobile] = useState(false);
   
   const [warehouses, setWarehouses] = useState<Warehouse[]>([
-    {
-      id: '1',
-      name: 'Global Hub Alpha',
-      location: 'New Jersey, USA',
-      status: 'Active',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: '2',
-      name: 'Pacific Logistics',
-      location: 'Oakland, CA',
-      status: 'Active',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: '3',
-      name: 'Northeast Depot',
-      location: 'Buffalo, NY',
-      status: 'Full',
-      createdAt: new Date().toISOString()
-    }
+    { id: '1', name: 'Global Hub Alpha', location: 'New Jersey, USA', status: 'Active', createdAt: new Date().toISOString() },
+    { id: '2', name: 'Pacific Logistics', location: 'Oakland, CA', status: 'Active', createdAt: new Date().toISOString() },
+    { id: '3', name: 'Northeast Depot', location: 'Buffalo, NY', status: 'Full', createdAt: new Date().toISOString() }
+  ]);
+
+  const [parts, setParts] = useState<Part[]>([
+    { id: 'p1', warehouseId: '1', name: 'PCB Mainboard V2', partId: 'PART-001', quantity: 15 },
+    { id: 'p2', warehouseId: '1', name: 'Coin Acceptor Mech', partId: 'PART-002', quantity: 42 }
+  ]);
+
+  const [machines, setMachines] = useState<Machine[]>([
+    { id: 'm1', warehouseId: '1', name: 'MegaSkill Deluxe', serialNumber: 'SN-99821', class: 'Skill', condition: 'New' },
+    { id: 'm2', warehouseId: '1', name: 'CryptoATM 500', serialNumber: 'SN-11200', class: 'ATM', condition: 'Used' }
   ]);
 
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([
@@ -53,7 +47,6 @@ const App: React.FC = () => {
 
   const handleLogin = (u: User) => {
     setUser(u);
-    // If we are emulating, we stay in the emulation but show the portal
     if (u.role !== 'Site Administrator') {
       setIsEmulatingMobile(true);
       setCurrentView('inventory-portal');
@@ -65,48 +58,42 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
-    // If we were emulating a staff role, stay in mobile frame but show login
-    if (!isEmulatingMobile) {
-      setCurrentView('warehouses');
-    }
+    if (!isEmulatingMobile) setCurrentView('warehouses');
   };
 
   const handleStartEmulation = () => {
-    setUser(null); // Log out current admin to show mobile login
+    setUser(null);
     setIsEmulatingMobile(true);
   };
 
   const handleExitEmulation = () => {
     setIsEmulatingMobile(false);
-    setUser(null); // Reset to main login
+    setUser(null);
   };
 
-  // -------------------------------------------------------------------------
-  // MOBILE EMULATION MODE
-  // -------------------------------------------------------------------------
+  const handleWarehouseClick = (id: string) => {
+    setSelectedWarehouseId(id);
+    setCurrentView('warehouse-detail');
+  };
+
+  // Inventory Handlers
+  const addPart = (p: Omit<Part, 'id'>) => setParts(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9) }]);
+  const updatePart = (p: Part) => setParts(prev => prev.map(item => item.id === p.id ? p : item));
+  const deletePart = (id: string) => setParts(prev => prev.filter(p => p.id !== id));
+  
+  const addMachine = (m: Omit<Machine, 'id'>) => setMachines(prev => [...prev, { ...m, id: Math.random().toString(36).substr(2, 9) }]);
+  const updateMachine = (m: Machine) => setMachines(prev => prev.map(item => item.id === m.id ? m : item));
+  const deleteMachine = (id: string) => setMachines(prev => prev.filter(m => m.id !== id));
+
   if (isEmulatingMobile) {
     return (
       <MobileFrame onExit={handleExitEmulation}>
-        {!user ? (
-          <Login 
-            onLogin={handleLogin} 
-            staffMembers={staffMembers}
-            isMobileView={true}
-          />
-        ) : (
-          <MobileDashboard 
-            user={user} 
-            warehouses={warehouses} 
-            onLogout={handleLogout} 
-          />
-        )}
+        {!user ? <Login onLogin={handleLogin} staffMembers={staffMembers} isMobileView={true} /> : 
+        <MobileDashboard user={user} warehouses={warehouses} onLogout={handleLogout} />}
       </MobileFrame>
     );
   }
 
-  // -------------------------------------------------------------------------
-  // MAIN ADMIN DASHBOARD
-  // -------------------------------------------------------------------------
   if (!user) {
     return (
       <Login 
@@ -117,6 +104,8 @@ const App: React.FC = () => {
       />
     );
   }
+
+  const selectedWarehouse = warehouses.find(w => w.id === selectedWarehouseId);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -134,6 +123,7 @@ const App: React.FC = () => {
               onAdd={(w) => setWarehouses(prev => [{...w, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString()}, ...prev])} 
               onUpdate={(updated) => setWarehouses(prev => prev.map(w => w.id === updated.id ? updated : w))}
               onDelete={(id) => setWarehouses(current => current.filter(w => w.id !== id))}
+              onWarehouseClick={handleWarehouseClick}
             />
           )}
           {currentView === 'staff' && (
@@ -143,6 +133,20 @@ const App: React.FC = () => {
               onAdd={(s) => setStaffMembers(prev => [{...s, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString()}, ...prev])}
               onUpdate={(updated) => setStaffMembers(prev => prev.map(s => s.id === updated.id ? updated : s))}
               onDelete={(id) => setStaffMembers(prev => prev.filter(s => s.id !== id))}
+            />
+          )}
+          {currentView === 'warehouse-detail' && selectedWarehouse && (
+            <WarehouseInventoryDetail
+              warehouse={selectedWarehouse}
+              parts={parts.filter(p => p.warehouseId === selectedWarehouse.id)}
+              machines={machines.filter(m => m.warehouseId === selectedWarehouse.id)}
+              onAddPart={addPart}
+              onUpdatePart={updatePart}
+              onDeletePart={deletePart}
+              onAddMachine={addMachine}
+              onUpdateMachine={updateMachine}
+              onDeleteMachine={deleteMachine}
+              onBack={() => setCurrentView('warehouses')}
             />
           )}
         </main>

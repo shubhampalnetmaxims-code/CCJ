@@ -9,14 +9,16 @@ interface WarehouseListProps {
   onAdd: (w: Omit<Warehouse, 'id' | 'createdAt'>) => void;
   onUpdate: (w: Warehouse) => void;
   onDelete: (id: string) => void;
+  onWarehouseClick: (id: string) => void;
 }
 
-const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpdate, onDelete }) => {
+const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpdate, onDelete, onWarehouseClick }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleEdit = (w: Warehouse) => {
+  const handleEdit = (e: React.MouseEvent, w: Warehouse) => {
+    e.stopPropagation();
     setEditingWarehouse(w);
     setIsFormOpen(true);
   };
@@ -31,7 +33,8 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
     setEditingWarehouse(null);
   };
 
-  const initiateDelete = (id: string) => {
+  const initiateDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     setDeleteId(id);
   };
 
@@ -48,8 +51,8 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouse Inventory</h1>
-          <p className="text-gray-500 text-sm">Monitor and manage facilities in your network</p>
+          <h1 className="text-2xl font-bold text-gray-900">Warehouse Network</h1>
+          <p className="text-gray-500 text-sm">Select a facility to manage its detailed inventory</p>
         </div>
         <button
           type="button"
@@ -99,10 +102,19 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {warehouses.map((w) => (
-                <tr key={w.id} className="hover:bg-indigo-50/30 transition-colors group">
+                <tr 
+                  key={w.id} 
+                  onClick={() => onWarehouseClick(w.id)}
+                  className="hover:bg-indigo-50/50 transition-colors group cursor-pointer"
+                >
                   <td className="px-8 py-5 whitespace-nowrap">
-                    <div className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{w.name}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 uppercase font-medium">UID: {w.id}</div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{w.name}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5 uppercase font-medium">UID: {w.id}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-8 py-5 whitespace-nowrap">
                     <div className="text-sm text-gray-600">{w.location}</div>
@@ -118,7 +130,7 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
                   <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
                     <button 
                       type="button"
-                      onClick={() => handleEdit(w)}
+                      onClick={(e) => handleEdit(e, w)}
                       className="text-indigo-500 hover:text-indigo-700 font-bold transition-colors"
                     >
                       Edit
@@ -126,7 +138,7 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
                     <span className="mx-3 text-gray-200">|</span>
                     <button 
                       type="button"
-                      onClick={() => initiateDelete(w.id)}
+                      onClick={(e) => initiateDelete(e, w.id)}
                       className="text-gray-400 hover:text-red-500 transition-colors font-bold"
                     >
                       Delete
@@ -134,13 +146,6 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
                   </td>
                 </tr>
               ))}
-              {warehouses.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-8 py-10 text-center text-gray-500 italic font-medium">
-                    No warehouses registered in the system.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -149,7 +154,7 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
       <ConfirmModal 
         isOpen={!!deleteId}
         title="Delete Warehouse"
-        message={`Are you sure you want to permanently delete "${warehouseToDelete?.name}"? This will also remove it from any staff member assignments.`}
+        message={`Are you sure you want to permanently delete "${warehouseToDelete?.name}"?`}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteId(null)}
       />

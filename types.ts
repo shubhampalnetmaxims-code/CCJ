@@ -7,6 +7,23 @@ export interface Warehouse {
   createdAt: string;
 }
 
+export interface Part {
+  id: string;
+  warehouseId: string;
+  name: string;
+  partId: string;
+  quantity: number;
+}
+
+export interface Machine {
+  id: string;
+  warehouseId: string;
+  name: string;
+  serialNumber: string;
+  class: 'Skill' | 'ATM' | 'Jukebox';
+  condition: 'New' | 'Used' | 'Damaged';
+}
+
 export type StaffRole = 'Warehouse Manager' | 'Inventory Manager' | 'Installer';
 
 export interface StaffMember {
@@ -24,7 +41,7 @@ export interface User {
   email: string;
   role: string;
   name: string;
-  assignedWarehouseIds?: string[]; // Specifically for Staff roles
+  assignedWarehouseIds?: string[];
 }
 
-export type View = 'warehouses' | 'staff' | 'mobile' | 'inventory-mobile' | 'inventory-portal';
+export type View = 'warehouses' | 'staff' | 'mobile' | 'inventory-mobile' | 'inventory-portal' | 'warehouse-detail';
