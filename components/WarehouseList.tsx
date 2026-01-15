@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Warehouse } from '../types';
 import WarehouseForm from './WarehouseForm';
 import ConfirmModal from './ConfirmModal';
@@ -16,6 +16,22 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+
+  const filteredWarehouses = useMemo(() => {
+    return warehouses.filter(w => {
+      const matchesSearch = 
+        w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        w.location.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'All' || w.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [warehouses, searchTerm, statusFilter]);
 
   const handleEdit = (e: React.MouseEvent, w: Warehouse) => {
     e.stopPropagation();
@@ -89,6 +105,36 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
         </div>
       )}
 
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all sm:text-sm font-medium shadow-sm"
+            placeholder="Search by facility name or location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="w-full sm:w-48">
+          <select
+            className="block w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all sm:text-sm font-bold shadow-sm appearance-none cursor-pointer"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Full">At Capacity</option>
+          </select>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
@@ -101,7 +147,7 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {warehouses.map((w) => (
+              {filteredWarehouses.map((w) => (
                 <tr 
                   key={w.id} 
                   onClick={() => onWarehouseClick(w.id)}
@@ -146,6 +192,13 @@ const WarehouseList: React.FC<WarehouseListProps> = ({ warehouses, onAdd, onUpda
                   </td>
                 </tr>
               ))}
+              {filteredWarehouses.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-8 py-10 text-center text-gray-500 italic">
+                    No facilities found matching your search.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

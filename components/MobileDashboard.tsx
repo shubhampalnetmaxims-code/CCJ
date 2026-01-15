@@ -27,6 +27,9 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
 
   // Helper to handle threshold updates
   const handleThresholdUpdate = (part: Part, newValue: string) => {
+    // Role check to enforce restriction: Warehouse Manager cannot change threshold
+    if (user.role === 'Warehouse Manager') return;
+    
     const threshold = parseInt(newValue) || 0;
     onUpdatePart({ ...part, threshold });
   };
@@ -42,7 +45,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to List
+            Back to Facilities
           </button>
           <h1 className="text-xl font-black text-slate-900 leading-none">{selectedWarehouse.name}</h1>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{selectedWarehouse.location}</p>
@@ -65,9 +68,11 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
 
         <main className="flex-1 overflow-y-auto px-5 py-6">
           {activeTab === 'parts' ? (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-12">
               {warehouseParts.map(p => {
                 const isLow = p.threshold !== undefined && p.quantity <= p.threshold;
+                const canEditThreshold = user.role !== 'Warehouse Manager';
+
                 return (
                   <div key={p.id} className={`bg-white p-5 rounded-[28px] border transition-all ${isLow ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}>
                     <div className="flex justify-between items-start mb-3">
@@ -82,13 +87,21 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                     </div>
                     
                     <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Alert Threshold</label>
+                      <div className="flex flex-col">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Alert Threshold</label>
+                        {!canEditThreshold && <span className="text-[7px] text-slate-300 font-bold uppercase">Restricted</span>}
+                      </div>
                       <div className="flex items-center gap-2">
                         <input 
                           type="number"
                           value={p.threshold ?? 0}
                           onChange={(e) => handleThresholdUpdate(p, e.target.value)}
-                          className="w-16 px-2 py-1 bg-slate-100 rounded-lg text-center font-black text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          disabled={!canEditThreshold}
+                          className={`w-16 px-2 py-1 rounded-lg text-center font-black text-xs border transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                            canEditThreshold 
+                              ? 'bg-slate-100 border-slate-200' 
+                              : 'bg-slate-50 border-transparent text-slate-300 cursor-not-allowed'
+                          }`}
                         />
                       </div>
                     </div>
@@ -105,7 +118,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
               })}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-12">
               {warehouseMachines.map(m => (
                 <div key={m.id} className="bg-white p-5 rounded-[28px] border border-slate-100">
                   <div className="flex items-start gap-4">
@@ -148,12 +161,12 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         </div>
         <button 
           onClick={onLogout}
-          className="flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 hover:text-red-500 transition-all active:scale-95"
+          className="flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 shadow-sm border border-slate-200/50"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back to Login
+          Logout
         </button>
       </header>
 
@@ -161,13 +174,13 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
       <main className="flex-1 overflow-y-auto px-5 py-8">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">Facilities</h2>
-            <p className="text-sm text-slate-500 font-medium">Assigned Locations ({assignedWarehouses.length})</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Facilities</h2>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Assigned Locations ({assignedWarehouses.length})</p>
           </div>
         </div>
 
         {/* The Grid */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 pb-20">
           {assignedWarehouses.map(w => (
             <div 
               key={w.id} 
@@ -226,7 +239,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
           </svg>
-          <span className="text-[8px] font-black uppercase tracking-tighter">Facilities</span>
+          <span className="text-[8px] font-black uppercase tracking-tighter">Inventory</span>
         </button>
         <button className="text-slate-300 flex flex-col items-center gap-1 hover:text-emerald-400 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

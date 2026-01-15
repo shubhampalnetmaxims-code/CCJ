@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Warehouse, Part, Machine } from '../types';
 
 interface Props {
@@ -31,10 +31,34 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
+  // Filter States
+  const [partSearch, setPartSearch] = useState('');
+  const [machineSearch, setMachineSearch] = useState('');
+  const [conditionFilter, setConditionFilter] = useState<string>('All');
+  const [classFilter, setClassFilter] = useState<string>('All');
+
   const [partData, setPartData] = useState<Omit<Part, 'id' | 'warehouseId'>>({ name: '', partId: '', quantity: 0, threshold: 0 });
   const [machineData, setMachineData] = useState<Omit<Machine, 'id' | 'warehouseId'>>({ 
     name: '', serialNumber: '', class: 'Skill', condition: 'New' 
   });
+
+  // Filtering Logic
+  const filteredParts = useMemo(() => {
+    return parts.filter(p => 
+      p.name.toLowerCase().includes(partSearch.toLowerCase()) ||
+      p.partId.toLowerCase().includes(partSearch.toLowerCase())
+    );
+  }, [parts, partSearch]);
+
+  const filteredMachines = useMemo(() => {
+    return machines.filter(m => {
+      const matchesSearch = m.name.toLowerCase().includes(machineSearch.toLowerCase()) ||
+                           m.serialNumber.toLowerCase().includes(machineSearch.toLowerCase());
+      const matchesCondition = conditionFilter === 'All' || m.condition === conditionFilter;
+      const matchesClass = classFilter === 'All' || m.class === classFilter;
+      return matchesSearch && matchesCondition && matchesClass;
+    });
+  }, [machines, machineSearch, conditionFilter, classFilter]);
 
   const handleOpenForm = (item: any = null) => {
     if (item) {
@@ -76,7 +100,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
       {/* Detail Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -120,20 +144,83 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Segmented Controller */}
-      <div className="bg-gray-100 p-1.5 rounded-3xl inline-flex gap-1 shadow-inner">
-        <button
-          onClick={() => setActiveTab('parts')}
-          className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'parts' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Part Inventory
-        </button>
-        <button
-          onClick={() => setActiveTab('machines')}
-          className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'machines' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Machine Inventory
-        </button>
+      {/* Segmented Controller & Filters */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="bg-gray-100 p-1.5 rounded-3xl inline-flex gap-1 shadow-inner self-start">
+          <button
+            onClick={() => setActiveTab('parts')}
+            className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'parts' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Part Inventory
+          </button>
+          <button
+            onClick={() => setActiveTab('machines')}
+            className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'machines' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Machine Inventory
+          </button>
+        </div>
+
+        {/* Global Filter Bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {activeTab === 'parts' ? (
+            <div className="relative flex-1 min-w-[300px]">
+              <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input 
+                type="text" 
+                placeholder="Search parts by name or ID..."
+                value={partSearch}
+                onChange={(e) => setPartSearch(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="relative flex-1 min-w-[250px]">
+                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                <input 
+                  type="text" 
+                  placeholder="Search machines or SN..."
+                  value={machineSearch}
+                  onChange={(e) => setMachineSearch(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <select 
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  className="px-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm appearance-none cursor-pointer min-w-[120px]"
+                >
+                  <option value="All">All Classes</option>
+                  <option value="Skill">Skill Game</option>
+                  <option value="ATM">ATM Terminal</option>
+                  <option value="Jukebox">Jukebox</option>
+                </select>
+                
+                <select 
+                  value={conditionFilter}
+                  onChange={(e) => setConditionFilter(e.target.value)}
+                  className="px-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm appearance-none cursor-pointer min-w-[120px]"
+                >
+                  <option value="All">All Conditions</option>
+                  <option value="New">New</option>
+                  <option value="Used">Used</option>
+                  <option value="Damaged">Damaged</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -151,7 +238,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {parts.map(p => {
+                {filteredParts.length > 0 ? filteredParts.map(p => {
                   const isLow = p.threshold !== undefined && p.quantity <= p.threshold;
                   return (
                     <tr key={p.id} className={`transition-colors ${isLow ? 'bg-amber-50/40 hover:bg-amber-50/60' : 'hover:bg-indigo-50/30'}`}>
@@ -169,45 +256,55 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                       </td>
                       <td className="px-8 py-5 text-gray-400 font-bold text-sm">{p.threshold ?? 0}</td>
                       <td className="px-8 py-5 text-right space-x-4">
-                        <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold">Edit</button>
+                        <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold transition-colors">Edit</button>
                         <button onClick={() => onDeletePart(p.id)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">Delete</button>
                       </td>
                     </tr>
                   );
-                })}
+                }) : (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-medium italic">No parts matching your search criteria.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
-            {machines.map(m => (
-              <div key={m.id} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 group hover:border-indigo-200 transition-all hover:shadow-xl">
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`p-4 rounded-2xl ${m.condition === 'New' ? 'bg-green-100 text-green-600' : m.condition === 'Damaged' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {m.class === 'ATM' ? (
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                      ) : m.class === 'Jukebox' ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      )}
-                    </svg>
+          <div className="p-8">
+            {filteredMachines.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredMachines.map(m => (
+                  <div key={m.id} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 group hover:border-indigo-200 transition-all hover:shadow-xl">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={`p-4 rounded-2xl ${m.condition === 'New' ? 'bg-green-100 text-green-600' : m.condition === 'Damaged' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {m.class === 'ATM' ? (
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                          ) : m.class === 'Jukebox' ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          )}
+                        </svg>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.class} Class</span>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${m.condition === 'New' ? 'text-green-600' : m.condition === 'Damaged' ? 'text-red-600' : 'text-orange-600'}`}>{m.condition}</p>
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 mb-1">{m.name}</h3>
+                    <p className="text-xs text-gray-400 font-bold mb-6">SN: <span className="text-indigo-600">{m.serialNumber}</span></p>
+                    
+                    <div className="flex gap-2">
+                      <button onClick={() => handleOpenForm(m)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-all">Edit</button>
+                      <button onClick={() => onDeleteMachine(m.id)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-400 hover:text-red-500 transition-all">Delete</button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.class} Class</span>
-                    <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${m.condition === 'New' ? 'text-green-600' : 'text-orange-600'}`}>{m.condition}</p>
-                  </div>
-                </div>
-                <h3 className="text-lg font-black text-gray-900 mb-1">{m.name}</h3>
-                <p className="text-xs text-gray-400 font-bold mb-6">SN: <span className="text-indigo-600">{m.serialNumber}</span></p>
-                
-                <div className="flex gap-2">
-                  <button onClick={() => handleOpenForm(m)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-all">Edit</button>
-                  <button onClick={() => onDeleteMachine(m.id)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-400 hover:text-red-500 transition-all">Delete</button>
-                </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-20 text-gray-400 font-medium italic">No machines matching your filters.</div>
+            )}
           </div>
         )}
       </div>

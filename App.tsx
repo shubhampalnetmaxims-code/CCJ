@@ -8,13 +8,14 @@ import StaffList from './components/StaffList';
 import MobileDashboard from './components/MobileDashboard';
 import MobileFrame from './components/MobileFrame';
 import WarehouseInventoryDetail from './components/WarehouseInventoryDetail';
-import { User, View, Warehouse, StaffMember, Part, Machine } from './types';
+import { User, View, Warehouse, StaffMember, Part, Machine, StaffRole } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
   const [isEmulatingMobile, setIsEmulatingMobile] = useState(false);
+  const [emulationRole, setEmulationRole] = useState<StaffRole | null>(null);
   
   const [warehouses, setWarehouses] = useState<Warehouse[]>([
     { id: '1', name: 'Global Hub Alpha', location: 'New Jersey, USA', status: 'Active', createdAt: new Date().toISOString() },
@@ -42,6 +43,16 @@ const App: React.FC = () => {
       role: 'Inventory Manager',
       assignedWarehouseIds: ['1', '2', '3'],
       createdAt: new Date().toISOString()
+    },
+    {
+      id: 'whm-1',
+      name: 'Sarah Warehouse',
+      email: 'warehousemanager@gmail.com',
+      contact: '555-0200',
+      password: 'warehouse',
+      role: 'Warehouse Manager',
+      assignedWarehouseIds: ['1'],
+      createdAt: new Date().toISOString()
     }
   ]);
 
@@ -61,13 +72,15 @@ const App: React.FC = () => {
     if (!isEmulatingMobile) setCurrentView('warehouses');
   };
 
-  const handleStartEmulation = () => {
+  const handleStartEmulation = (role: StaffRole) => {
     setUser(null);
+    setEmulationRole(role);
     setIsEmulatingMobile(true);
   };
 
   const handleExitEmulation = () => {
     setIsEmulatingMobile(false);
+    setEmulationRole(null);
     setUser(null);
   };
 
@@ -88,15 +101,23 @@ const App: React.FC = () => {
   if (isEmulatingMobile) {
     return (
       <MobileFrame onExit={handleExitEmulation}>
-        {!user ? <Login onLogin={handleLogin} staffMembers={staffMembers} isMobileView={true} /> : 
-        <MobileDashboard 
-          user={user} 
-          warehouses={warehouses} 
-          parts={parts}
-          machines={machines}
-          onUpdatePart={updatePart}
-          onLogout={handleLogout} 
-        />}
+        {!user ? (
+          <Login 
+            onLogin={handleLogin} 
+            staffMembers={staffMembers} 
+            isMobileView={true} 
+            initialRole={emulationRole || undefined}
+          />
+        ) : (
+          <MobileDashboard 
+            user={user} 
+            warehouses={warehouses} 
+            parts={parts}
+            machines={machines}
+            onUpdatePart={updatePart}
+            onLogout={handleLogout} 
+          />
+        )}
       </MobileFrame>
     );
   }
@@ -106,8 +127,8 @@ const App: React.FC = () => {
       <Login 
         onLogin={handleLogin} 
         staffMembers={staffMembers}
-        onMobileClick={handleStartEmulation} 
-        onInventoryMobileClick={handleStartEmulation}
+        onMobileClick={() => handleStartEmulation('Warehouse Manager')} 
+        onInventoryMobileClick={() => handleStartEmulation('Inventory Manager')}
       />
     );
   }
@@ -120,8 +141,8 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
           user={user} 
-          onMobileClick={handleStartEmulation} 
-          onInventoryMobileClick={handleStartEmulation}
+          onMobileClick={() => handleStartEmulation('Warehouse Manager')} 
+          onInventoryMobileClick={() => handleStartEmulation('Inventory Manager')}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {currentView === 'warehouses' && (

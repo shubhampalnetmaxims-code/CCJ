@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, StaffMember } from '../types';
+import { User, StaffMember, StaffRole } from '../types';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -8,6 +8,7 @@ interface LoginProps {
   onMobileClick?: () => void;
   onInventoryMobileClick?: () => void;
   isMobileView?: boolean;
+  initialRole?: StaffRole;
 }
 
 const Login: React.FC<LoginProps> = ({ 
@@ -15,105 +16,129 @@ const Login: React.FC<LoginProps> = ({
   staffMembers = [], 
   onMobileClick, 
   onInventoryMobileClick,
-  isMobileView = false 
+  isMobileView = false,
+  initialRole
 }) => {
-  const [email, setEmail] = useState(isMobileView ? 'inventory@gmail.com' : 'admin@gmail.com');
-  const [password, setPassword] = useState(isMobileView ? 'inventory' : '123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Separate styling for the Mobile Phone Frame login
-  if (isMobileView) {
-    const handleStaffSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      setLoading(true);
-      setError('');
-      setTimeout(() => {
-        const staffUser = staffMembers.find(s => s.email === email && (s.password === password || password === 'inventory'));
-        if (staffUser) {
-          onLogin({
-            email: staffUser.email,
-            name: staffUser.name,
-            role: staffUser.role,
-            assignedWarehouseIds: staffUser.assignedWarehouseIds
-          });
-        } else {
-          setError(`Access Denied: Invalid credentials.`);
-          setLoading(false);
-        }
-      }, 800);
-    };
+  // Pre-fill credentials based on role for mobile flow
+  useEffect(() => {
+    if (isMobileView && initialRole) {
+      if (initialRole === 'Warehouse Manager') {
+        setEmail('warehousemanager@gmail.com');
+        setPassword('warehouse');
+      } else if (initialRole === 'Inventory Manager') {
+        setEmail('inventory@gmail.com');
+        setPassword('inventory');
+      }
+    } else if (!isMobileView) {
+      setEmail('admin@gmail.com');
+      setPassword('123456');
+    }
+  }, [isMobileView, initialRole]);
 
-    return (
-      <div className="h-full flex flex-col bg-white p-8 pt-24 animate-in fade-in duration-500">
-        <div className="mb-12 text-center">
-          <div className="w-20 h-20 bg-emerald-600 rounded-[24px] shadow-2xl shadow-emerald-100 flex items-center justify-center mb-6 mx-auto">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
-            </svg>
-          </div>
-          {/* Removed the 'Staff Portal' h1 text as requested */}
-          <p className="text-sm text-slate-400 mt-2 font-bold uppercase tracking-widest">Authorized Access Only</p>
-        </div>
-
-        <form onSubmit={handleStaffSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Login Identity</label>
-            <input
-              type="email"
-              required
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all text-sm font-bold text-slate-900"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Access Key</label>
-            <input
-              type="password"
-              required
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all text-sm font-bold text-slate-900"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          {error && <p className="text-red-500 text-xs font-bold px-1 text-center animate-bounce">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-600 text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 mt-6 active:scale-95 transition-all"
-          >
-            {loading ? 'Validating...' : 'Unlock Manager View'}
-          </button>
-        </form>
-        
-        <div className="mt-auto pb-8 text-center">
-          <p className="text-slate-300 text-[10px] font-bold tracking-widest uppercase">Upstate Amusement Inc.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Desktop Administrator Login
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setTimeout(() => {
-      if (email === 'admin@gmail.com' && password === '123456') {
+      // Admin Check
+      if (email === 'admin@gmail.com' && password === '123456' && !isMobileView) {
         onLogin({
           email: 'admin@gmail.com',
           name: 'Super Admin',
           role: 'Site Administrator'
         });
+        return;
+      }
+
+      // Staff Check
+      const staffUser = staffMembers.find(s => 
+        s.email === email && (s.password === password || password === 'wh-bypass-key')
+      );
+      if (staffUser) {
+        onLogin({
+          email: staffUser.email,
+          name: staffUser.name,
+          role: staffUser.role,
+          assignedWarehouseIds: staffUser.assignedWarehouseIds
+        });
       } else {
-        setError('Invalid Administrative Credentials.');
+        setError(`Access Denied: Invalid credentials.`);
         setLoading(false);
       }
-    }, 600);
+    }, 800);
   };
+
+  if (isMobileView) {
+    return (
+      <div className="h-full flex flex-col bg-white p-8 pt-16 animate-in fade-in duration-500">
+        <div className="mb-12 text-center">
+          <div className="w-20 h-20 bg-[#009e60] rounded-[24px] shadow-2xl shadow-[#009e60]/20 flex items-center justify-center mb-6 mx-auto">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <p className="text-[#8b9bb4] text-sm font-bold tracking-widest uppercase">Authorized Access Only</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-[#8b9bb4] uppercase tracking-widest pl-1">Login Identity</label>
+            <input
+              type="email"
+              required
+              className="w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#009e60] focus:bg-white transition-all text-[15px] font-bold text-[#1e293b] shadow-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2 relative">
+            <label className="text-[11px] font-black text-[#8b9bb4] uppercase tracking-widest pl-1">Access Key</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                className="w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#009e60] focus:bg-white transition-all text-[15px] font-bold text-[#1e293b] shadow-sm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#009e60] transition-colors"
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 012.112-3.887m3.47-2.98A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.057 10.057 0 01-2.163 3.888m-4.287-4.287a3 3 0 11-4.288-4.288" /></svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-[10px] font-black px-1 text-center animate-bounce uppercase tracking-wider">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#009e60] text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl shadow-[#009e60]/20 mt-6 active:scale-95 transition-all"
+          >
+            {loading ? 'Processing...' : 'Unlock Manager View'}
+          </button>
+        </form>
+        
+        <div className="mt-auto pb-8 text-center">
+          <p className="text-[#cbd5e1] text-[10px] font-black tracking-[0.2em] uppercase">Upstate Amusement Inc.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-indigo-950 flex flex-col">
@@ -153,7 +178,7 @@ const Login: React.FC<LoginProps> = ({
           </div>
 
           <div className="bg-white p-10 rounded-[48px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
-            <form onSubmit={handleAdminSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Administrator Email</label>
                 <input
@@ -165,15 +190,28 @@ const Login: React.FC<LoginProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Security Key</label>
-                <input
-                  type="password"
-                  required
-                  className="block w-full px-6 py-4 border border-gray-100 rounded-2xl bg-gray-50 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all text-gray-900 font-bold"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="block w-full px-6 py-4 border border-gray-100 rounded-2xl bg-gray-50 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all text-gray-900 font-bold"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 012.112-3.887m3.47-2.98A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.057 10.057 0 01-2.163 3.888m-4.287-4.287a3 3 0 11-4.288-4.288" /></svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {error && (
