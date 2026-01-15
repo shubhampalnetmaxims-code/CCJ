@@ -115,6 +115,8 @@ const App: React.FC = () => {
             parts={parts}
             machines={machines}
             onUpdatePart={updatePart}
+            onAddPart={addPart}
+            onAddMachine={addMachine}
             onLogout={handleLogout} 
           />
         )}

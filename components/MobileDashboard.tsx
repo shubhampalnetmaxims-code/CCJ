@@ -8,14 +8,20 @@ interface MobileDashboardProps {
   parts: Part[];
   machines: Machine[];
   onUpdatePart: (p: Part) => void;
+  onAddPart: (p: Omit<Part, 'id'>) => void;
+  onAddMachine: (m: Omit<Machine, 'id'>) => void;
   onLogout: () => void;
 }
 
 const MobileDashboard: React.FC<MobileDashboardProps> = ({ 
-  user, warehouses, parts, machines, onUpdatePart, onLogout 
+  user, warehouses, parts, machines, onUpdatePart, onAddPart, onAddMachine, onLogout 
 }) => {
+  const [activeMainTab, setActiveMainTab] = useState<'inventory' | 'intake' | 'profile' | 'settings'>('inventory');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'parts' | 'machines'>('parts');
+  const [activeInventoryTab, setActiveInventoryTab] = useState<'parts' | 'machines'>('parts');
+  
+  // Intake Sub-views
+  const [intakeView, setIntakeView] = useState<'selection' | 'part-form' | 'machine-form'>('selection');
 
   const assignedWarehouses = warehouses.filter(w => 
     user.assignedWarehouseIds?.includes(w.id)
@@ -25,236 +31,377 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   const warehouseParts = parts.filter(p => p.warehouseId === selectedWarehouseId);
   const warehouseMachines = machines.filter(m => m.warehouseId === selectedWarehouseId);
 
-  // Helper to handle threshold updates
-  const handleThresholdUpdate = (part: Part, newValue: string) => {
-    // Role check to enforce restriction: Warehouse Manager cannot change threshold
-    if (user.role === 'Warehouse Manager') return;
-    
-    const threshold = parseInt(newValue) || 0;
-    onUpdatePart({ ...part, threshold });
+  // Intake Form States
+  const [intakeWarehouseId, setIntakeWarehouseId] = useState(assignedWarehouses[0]?.id || '');
+  const [partData, setPartData] = useState({ name: '', partId: '', quantity: 0, threshold: 0 });
+  const [machineData, setMachineData] = useState({ name: '', serialNumber: '', class: 'Skill' as const, condition: 'New' as const });
+
+  const handlePartIntake = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddPart({ ...partData, warehouseId: intakeWarehouseId });
+    alert('Part successfully registered to inventory.');
+    setIntakeView('selection');
+    setPartData({ name: '', partId: '', quantity: 0, threshold: 0 });
   };
 
-  if (selectedWarehouse) {
-    return (
-      <div className="h-full flex flex-col bg-slate-50 animate-in slide-in-from-right duration-300">
-        <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 sticky top-0 z-20">
-          <button 
-            onClick={() => setSelectedWarehouseId(null)}
-            className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-bold text-xs mb-4 shadow-sm border border-emerald-100 active:scale-95 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Facilities
-          </button>
-          <h1 className="text-xl font-black text-slate-900 leading-none">{selectedWarehouse.name}</h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{selectedWarehouse.location}</p>
-        </header>
+  const handleMachineIntake = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddMachine({ ...machineData, warehouseId: intakeWarehouseId });
+    alert('Machine asset registered successfully.');
+    setIntakeView('selection');
+    setMachineData({ name: '', serialNumber: '', class: 'Skill', condition: 'New' });
+  };
 
-        <div className="bg-white px-6 py-2 border-b border-slate-100 flex gap-6">
-          <button 
-            onClick={() => setActiveTab('parts')}
-            className={`py-3 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'parts' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400'}`}
-          >
-            Parts ({warehouseParts.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('machines')}
-            className={`py-3 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'machines' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400'}`}
-          >
-            Machines ({warehouseMachines.length})
-          </button>
-        </div>
+  const renderInventory = () => {
+    if (selectedWarehouse) {
+      return (
+        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
+          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+            <button 
+              onClick={() => setSelectedWarehouseId(null)}
+              className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-wider mb-4 border border-emerald-100 active:scale-95 transition-all"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+            <h1 className="text-lg font-black text-[#0f172a] leading-tight">{selectedWarehouse.name}</h1>
+            <p className="text-[9px] text-[#64748b] font-bold uppercase tracking-widest mt-0.5">{selectedWarehouse.location}</p>
+          </header>
 
-        <main className="flex-1 overflow-y-auto px-5 py-6">
-          {activeTab === 'parts' ? (
-            <div className="space-y-4 pb-12">
-              {warehouseParts.map(p => {
-                const isLow = p.threshold !== undefined && p.quantity <= p.threshold;
-                const canEditThreshold = user.role !== 'Warehouse Manager';
+          <div className="bg-white px-5 py-0 border-b border-slate-100 flex gap-6">
+            <button 
+              onClick={() => setActiveInventoryTab('parts')}
+              className={`py-3 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all ${activeInventoryTab === 'parts' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400'}`}
+            >
+              Inventory ({warehouseParts.length})
+            </button>
+            <button 
+              onClick={() => setActiveInventoryTab('machines')}
+              className={`py-3 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all ${activeInventoryTab === 'machines' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400'}`}
+            >
+              Machines ({warehouseMachines.length})
+            </button>
+          </div>
 
-                return (
-                  <div key={p.id} className={`bg-white p-5 rounded-[28px] border transition-all ${isLow ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-black text-slate-900">{p.name}</h3>
-                        <p className="text-[10px] font-mono text-emerald-600 font-bold">SKU: {p.partId}</p>
-                      </div>
-                      <div className={`text-right ${isLow ? 'text-amber-600' : 'text-slate-900'}`}>
-                        <span className="text-2xl font-black">{p.quantity}</span>
-                        <span className="text-[10px] uppercase font-black ml-1">In Stock</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Alert Threshold</label>
-                        {!canEditThreshold && <span className="text-[7px] text-slate-300 font-bold uppercase">Restricted</span>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="number"
-                          value={p.threshold ?? 0}
-                          onChange={(e) => handleThresholdUpdate(p, e.target.value)}
-                          disabled={!canEditThreshold}
-                          className={`w-16 px-2 py-1 rounded-lg text-center font-black text-xs border transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                            canEditThreshold 
-                              ? 'bg-slate-100 border-slate-200' 
-                              : 'bg-slate-50 border-transparent text-slate-300 cursor-not-allowed'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                    {isLow && (
-                      <div className="mt-3 flex items-center gap-1.5 text-amber-600">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-[9px] font-black uppercase">Low Stock Warning</span>
-                      </div>
-                    )}
+          <main className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+            {activeInventoryTab === 'parts' ? (
+              warehouseParts.map(p => (
+                <div key={p.id} className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-[#0f172a] text-sm">{p.name}</h3>
+                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">SKU: {p.partId}</p>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="space-y-4 pb-12">
-              {warehouseMachines.map(m => (
-                <div key={m.id} className="bg-white p-5 rounded-[28px] border border-slate-100">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-black text-slate-900">{m.name}</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{m.class} • SN: {m.serialNumber}</p>
-                      <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                        m.condition === 'New' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {m.condition}
-                      </span>
-                    </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black text-[#0f172a]">{p.quantity}</span>
+                    <span className="text-[8px] font-black ml-1 text-slate-400 uppercase">PCS</span>
                   </div>
                 </div>
-              ))}
+              ))
+            ) : (
+              warehouseMachines.map(m => (
+                <div key={m.id} className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm">
+                  <h3 className="font-bold text-[#0f172a] text-sm">{m.name}</h3>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{m.class} • SN: {m.serialNumber}</p>
+                </div>
+              ))
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-500">
+        <header className="px-5 pt-12 pb-4 bg-white flex items-center justify-between sticky top-0 z-20 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 bg-[#009e60] rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-emerald-100 border-2 border-white">
+              {user.name.charAt(0)}
             </div>
-          )}
+            <div>
+              <p className="text-[9px] text-[#009e60] font-black uppercase tracking-widest leading-none mb-0.5">{user.role}</p>
+              <p className="text-[11px] text-[#0f172a] font-bold leading-none">{user.name}</p>
+            </div>
+          </div>
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-1.5 bg-white text-[#475569] px-3.5 py-1.5 rounded-full font-black text-[9px] uppercase tracking-wider shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-slate-100 active:scale-95 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Logout
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-5 py-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-black text-[#0f172a] tracking-tight">Facilities</h2>
+            <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-wider mt-0.5">Assigned Locations ({assignedWarehouses.length})</p>
+          </div>
+          <div className="space-y-4">
+            {assignedWarehouses.map(w => (
+              <div 
+                key={w.id} 
+                onClick={() => setSelectedWarehouseId(w.id)}
+                className="bg-white rounded-[28px] shadow-[0_8px_20px_rgba(0,0,0,0.04)] border border-[#f1f5f9] flex items-center gap-4 p-4 active:scale-[0.98] transition-all group relative overflow-hidden cursor-pointer"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#009e60]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#f0fdf4] flex items-center justify-center shrink-0">
+                  <svg className="w-6 h-6 text-[#009e60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-[#0f172a] text-base leading-tight">{w.name}</h3>
+                  <p className="text-[10px] text-[#94a3b8] font-semibold mt-0.5">{w.location}</p>
+                  <div className="mt-1.5 flex">
+                    <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-[#009e60] bg-[#f0fdf4] border border-emerald-100">ACTIVE</span>
+                  </div>
+                </div>
+                <div className="text-[#cbd5e1] group-hover:text-[#009e60] transition-colors shrink-0">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
         </main>
       </div>
     );
-  }
+  };
+
+  const renderIntake = () => {
+    if (intakeView === 'selection') {
+      return (
+        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
+          <header className="px-5 pt-12 pb-6 bg-white sticky top-0 z-20">
+            <h2 className="text-2xl font-black text-[#0f172a] tracking-tight">Inventory Intake</h2>
+            <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-wider mt-0.5">Register new arrivals</p>
+          </header>
+          
+          <main className="flex-1 px-5 py-6 space-y-6">
+            <button 
+              onClick={() => setIntakeView('part-form')}
+              className="w-full bg-white p-6 rounded-[32px] shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-[#f1f5f9] flex items-center gap-5 active:scale-[0.98] transition-all"
+            >
+              <div className="w-16 h-16 rounded-[22px] bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="font-black text-[#0f172a] text-lg">Parts Intake</h3>
+                <p className="text-[11px] text-[#64748b] font-bold uppercase tracking-wide mt-0.5">Add hardware & spares</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setIntakeView('machine-form')}
+              className="w-full bg-white p-6 rounded-[32px] shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-[#f1f5f9] flex items-center gap-5 active:scale-[0.98] transition-all"
+            >
+              <div className="w-16 h-16 rounded-[22px] bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="font-black text-[#0f172a] text-lg">Machine Intake</h3>
+                <p className="text-[11px] text-[#64748b] font-bold uppercase tracking-wide mt-0.5">Add gaming or ATM assets</p>
+              </div>
+            </button>
+          </main>
+        </div>
+      );
+    }
+
+    if (intakeView === 'part-form') {
+      return (
+        <div className="h-full flex flex-col bg-white animate-in slide-in-from-right duration-300">
+          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-50 sticky top-0 z-20">
+            <button 
+              onClick={() => setIntakeView('selection')}
+              className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest mb-3"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+            <h2 className="text-xl font-black text-[#0f172a]">New Parts Intake</h2>
+          </header>
+          <form onSubmit={handlePartIntake} className="flex-1 overflow-y-auto px-5 py-6 space-y-5 pb-12">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Target Facility</label>
+              <select 
+                value={intakeWarehouseId} 
+                onChange={e => setIntakeWarehouseId(e.target.value)}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              >
+                {assignedWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Part Common Name</label>
+              <input type="text" required value={partData.name} onChange={e => setPartData({...partData, name: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Part ID / SKU</label>
+              <input type="text" required value={partData.partId} onChange={e => setPartData({...partData, partId: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Initial Qty</label>
+                <input type="number" required value={partData.quantity} onChange={e => setPartData({...partData, quantity: parseInt(e.target.value)})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Low Alert</label>
+                <input type="number" required value={partData.threshold} onChange={e => setPartData({...partData, threshold: parseInt(e.target.value)})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+            </div>
+            <button type="submit" className="w-full bg-[#009e60] text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 mt-4 active:scale-95 transition-all">
+              Add to Inventory
+            </button>
+          </form>
+        </div>
+      );
+    }
+
+    if (intakeView === 'machine-form') {
+      return (
+        <div className="h-full flex flex-col bg-white animate-in slide-in-from-right duration-300">
+          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-50 sticky top-0 z-20">
+            <button 
+              onClick={() => setIntakeView('selection')}
+              className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest mb-3"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+            <h2 className="text-xl font-black text-[#0f172a]">Machine Asset Intake</h2>
+          </header>
+          <form onSubmit={handleMachineIntake} className="flex-1 overflow-y-auto px-5 py-6 space-y-5 pb-12">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Assigned Facility</label>
+              <select 
+                value={intakeWarehouseId} 
+                onChange={e => setIntakeWarehouseId(e.target.value)}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                {assignedWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Model Name</label>
+              <input type="text" required value={machineData.name} onChange={e => setMachineData({...machineData, name: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Serial Number</label>
+              <input type="text" required value={machineData.serialNumber} onChange={e => setMachineData({...machineData, serialNumber: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Asset Class</label>
+                <select value={machineData.class} onChange={e => setMachineData({...machineData, class: e.target.value as any})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="Skill">Skill Game</option>
+                  <option value="ATM">ATM Terminal</option>
+                  <option value="Jukebox">Jukebox</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest pl-1">Condition</label>
+                <select value={machineData.condition} onChange={e => setMachineData({...machineData, condition: e.target.value as any})} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="New">New</option>
+                  <option value="Used">Used</option>
+                  <option value="Damaged">Damaged</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 mt-4 active:scale-95 transition-all">
+              Register Machine
+            </button>
+          </form>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 animate-in slide-in-from-right duration-500">
-      {/* Mobile App Bar */}
-      <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-100">
-            {user.name.charAt(0)}
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-slate-900 leading-none">Dashboard</h1>
-            <p className="text-[9px] text-emerald-600 font-black uppercase tracking-[0.15em] mt-1">{user.role}</p>
-          </div>
-        </div>
-        <button 
-          onClick={onLogout}
-          className="flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-2 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 shadow-sm border border-slate-200/50"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Logout
-        </button>
-      </header>
-
-      {/* Main Grid View */}
-      <main className="flex-1 overflow-y-auto px-5 py-8">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Facilities</h2>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Assigned Locations ({assignedWarehouses.length})</p>
-          </div>
-        </div>
-
-        {/* The Grid */}
-        <div className="grid grid-cols-1 gap-4 pb-20">
-          {assignedWarehouses.map(w => (
-            <div 
-              key={w.id} 
-              onClick={() => setSelectedWarehouseId(w.id)}
-              className="bg-white p-5 rounded-[36px] shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.97] transition-all group relative overflow-hidden cursor-pointer"
-            >
-              {/* Subtle accent line */}
-              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                w.status === 'Active' ? 'bg-emerald-500' :
-                w.status === 'Full' ? 'bg-orange-500' : 'bg-slate-300'
-              }`} />
-              
-              <div className={`w-14 h-14 rounded-[20px] flex items-center justify-center shrink-0 ${
-                w.status === 'Active' ? 'bg-emerald-50 text-emerald-600' :
-                w.status === 'Full' ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-600'
-              }`}>
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+    <div className="h-full flex flex-col bg-[#fcfdfe]">
+      <div className="flex-1 relative overflow-hidden">
+        {activeMainTab === 'inventory' && renderInventory()}
+        {activeMainTab === 'intake' && renderIntake()}
+        {activeMainTab === 'profile' && (
+          <div className="h-full flex items-center justify-center p-8 text-center bg-white">
+            <div>
+              <div className="w-24 h-24 bg-slate-100 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl text-slate-400 font-bold border-4 border-white shadow-lg">
+                {user.name.charAt(0)}
               </div>
-              
-              <div className="flex-1 min-w-0 pr-4">
-                <h3 className="font-black text-slate-900 truncate text-[16px]">{w.name}</h3>
-                <p className="text-[11px] text-slate-400 font-bold truncate mt-0.5">{w.location}</p>
-                <div className="flex items-center gap-2 mt-2">
-                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
-                    w.status === 'Active' ? 'text-emerald-700 bg-emerald-50' : 'text-orange-700 bg-orange-50'
-                  }`}>{w.status}</span>
-                </div>
-              </div>
-              
-              <div className="text-slate-200 group-hover:text-emerald-500 transition-colors shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
-                </svg>
+              <h3 className="text-xl font-black text-slate-800">{user.name}</h3>
+              <p className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-4">{user.role}</p>
+              <div className="p-4 bg-slate-50 rounded-2xl text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                System Access Profile
               </div>
             </div>
-          ))}
-        </div>
-
-        {assignedWarehouses.length === 0 && (
-          <div className="py-24 text-center">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-            </div>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-[11px]">No Assigned Nodes</p>
           </div>
         )}
-      </main>
+        {activeMainTab === 'settings' && (
+          <div className="h-full flex items-center justify-center p-8 text-center bg-white">
+             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Configuration Settings Locked</p>
+          </div>
+        )}
+      </div>
 
-      {/* Bottom Navigation */}
-      <footer className="px-10 py-6 bg-white border-t border-slate-100 flex items-center justify-between pb-10 shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
-        <button className="text-emerald-600 flex flex-col items-center gap-1 group">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      <nav className="px-8 py-4 bg-white border-t border-[#f1f5f9] flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.03)] shrink-0 pb-7 z-30">
+        <button 
+          onClick={() => setActiveMainTab('inventory')}
+          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'inventory' ? 'text-[#009e60]' : 'text-[#94a3b8]'}`}
+        >
+          <svg className="w-5 h-5" fill={activeMainTab === 'inventory' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span className="text-[8px] font-black uppercase tracking-tighter">Inventory</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">Facilities</span>
         </button>
-        <button className="text-slate-300 flex flex-col items-center gap-1 hover:text-emerald-400 transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        
+        <button 
+          onClick={() => {
+            setActiveMainTab('intake');
+            setIntakeView('selection');
+          }}
+          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'intake' ? 'text-[#009e60]' : 'text-[#94a3b8]'}`}
+        >
+          <svg className="w-5 h-5" fill={activeMainTab === 'intake' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="text-[8px] font-black uppercase tracking-tighter">Profile</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">Intake</span>
         </button>
-        <button className="text-slate-300 flex flex-col items-center gap-1 hover:text-emerald-400 transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+
+        <button 
+          onClick={() => setActiveMainTab('profile')}
+          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'profile' ? 'text-[#009e60]' : 'text-[#94a3b8]'}`}
+        >
+          <svg className="w-5 h-5" fill={activeMainTab === 'profile' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          <span className="text-[8px] font-black uppercase tracking-tighter">Settings</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">Profile</span>
         </button>
-      </footer>
+
+        <button 
+          onClick={() => setActiveMainTab('settings')}
+          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'settings' ? 'text-[#009e60]' : 'text-[#94a3b8]'}`}
+        >
+          <svg className="w-5 h-5" fill={activeMainTab === 'settings' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          </svg>
+          <span className="text-[7px] font-black uppercase tracking-tighter">Settings</span>
+        </button>
+      </nav>
     </div>
   );
 };
