@@ -49,6 +49,22 @@ export interface Machine {
   intakeDate?: string;
 }
 
+export type WorkOrderStatus = 'New' | 'Pending' | 'Accepted' | 'Completed';
+export type Priority = 'Low' | 'Medium' | 'High';
+
+export interface WorkOrder {
+  id: string;
+  title: string;
+  description: string;
+  status: WorkOrderStatus;
+  assignedToId?: string; // StaffMember ID (Warehouse Manager)
+  warehouseId: string;
+  createdBy: string;
+  createdAt: string;
+  priority: Priority;
+  history?: string[]; // Log of actions like associated transfers
+}
+
 export type StaffRole = 'Warehouse Manager' | 'Inventory Manager' | 'Installer' | 'Site Administrator';
 
 export interface StaffMember {
@@ -63,6 +79,7 @@ export interface StaffMember {
 }
 
 export interface User {
+  id?: string;
   email: string;
   role: string;
   name: string;

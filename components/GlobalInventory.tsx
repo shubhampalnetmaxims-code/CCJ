@@ -406,7 +406,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
                {selectedAuditItem.item.notes && (
                   <div className="bg-amber-50 p-5 rounded-[32px] border border-amber-100">
                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1.5 pl-1">Intake Description / Notes</p>
-                    <p className="text-sm font-bold text-slate-700 italic leading-relaxed">"{selectedAuditItem.item.notes}"</p>
+                    <p className="text-sm font-bold text-slate-700 italic leading-relaxed whitespace-pre-wrap">"{selectedAuditItem.item.notes}"</p>
                   </div>
                )}
 
