@@ -13,6 +13,7 @@ interface Props {
   onUpdateMachine: (m: Machine) => void;
   onDeleteMachine: (id: string) => void;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
 const WarehouseInventoryDetail: React.FC<Props> = ({
@@ -26,10 +27,12 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   onUpdateMachine,
   onDeleteMachine,
   onBack,
+  readOnly = false
 }) => {
   const [activeTab, setActiveTab] = useState<'parts' | 'machines'>('parts');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [modalTab, setModalTab] = useState<'details' | 'history'>('details');
 
   // Filter States
   const [partSearch, setPartSearch] = useState('');
@@ -37,9 +40,17 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   const [conditionFilter, setConditionFilter] = useState<string>('All');
   const [classFilter, setClassFilter] = useState<string>('All');
 
-  const [partData, setPartData] = useState<Omit<Part, 'id' | 'warehouseId'>>({ name: '', partId: '', quantity: 0, threshold: 0 });
+  const [partData, setPartData] = useState<Omit<Part, 'id' | 'warehouseId'>>({ 
+    name: '', partId: '', quantity: 0, threshold: 0, notes: '',
+    barcodesScanned: false, countVerified: false, damageLogged: false, locationCorrect: 'Main Aisle', countUpdated: false,
+    intakeBy: '', intakeDate: ''
+  });
+  
   const [machineData, setMachineData] = useState<Omit<Machine, 'id' | 'warehouseId'>>({ 
-    name: '', serialNumber: '', class: 'Skill', condition: 'New' 
+    name: '', serialNumber: '', class: 'Skill', condition: 'New', notes: '',
+    inspected: false, serialReadable: false, bootsToMenu: false, photosTaken: false, storedCorrectly: false,
+    serialMatch: false, stockAdjusted: false, returnStatus: 'Re-deploy',
+    intakeBy: '', intakeDate: ''
   });
 
   // Filtering Logic
@@ -61,20 +72,62 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
   }, [machines, machineSearch, conditionFilter, classFilter]);
 
   const handleOpenForm = (item: any = null) => {
+    setModalTab('details');
     if (item) {
       setEditingItem(item);
-      if (activeTab === 'parts') setPartData({ name: item.name, partId: item.partId, quantity: item.quantity, threshold: item.threshold ?? 0 });
-      else setMachineData({ name: item.name, serialNumber: item.serialNumber, class: item.class, condition: item.condition });
+      if (activeTab === 'parts') setPartData({ 
+        name: item.name, 
+        partId: item.partId, 
+        quantity: item.quantity, 
+        threshold: item.threshold ?? 0, 
+        notes: item.notes || '',
+        barcodesScanned: item.barcodesScanned || false,
+        countVerified: item.countVerified || false,
+        damageLogged: item.damageLogged || false,
+        locationCorrect: item.locationCorrect || 'Main Aisle',
+        countUpdated: item.countUpdated || false,
+        intakeBy: item.intakeBy || 'Administrator',
+        intakeDate: item.intakeDate || new Date().toISOString()
+      });
+      else setMachineData({ 
+        name: item.name, 
+        serialNumber: item.serialNumber, 
+        class: item.class, 
+        condition: item.condition,
+        notes: item.notes || '',
+        intakeType: item.intakeType || 'Intake',
+        inspected: item.inspected || false,
+        serialReadable: item.serialReadable || false,
+        bootsToMenu: item.bootsToMenu || false,
+        photosTaken: item.photosTaken || false,
+        storedCorrectly: item.storedCorrectly || false,
+        serialMatch: item.serialMatch || false,
+        stockAdjusted: item.stockAdjusted || false,
+        returnStatus: item.returnStatus || 'Re-deploy',
+        intakeBy: item.intakeBy || 'Administrator',
+        intakeDate: item.intakeDate || item.createdAt || new Date().toISOString()
+      });
     } else {
+      if (readOnly) return;
       setEditingItem(null);
-      setPartData({ name: '', partId: '', quantity: 0, threshold: 0 });
-      setMachineData({ name: '', serialNumber: '', class: 'Skill', condition: 'New' });
+      setPartData({ 
+        name: '', partId: '', quantity: 0, threshold: 0, notes: '',
+        barcodesScanned: false, countVerified: false, damageLogged: false, locationCorrect: 'Main Aisle', countUpdated: false,
+        intakeBy: 'Administrator', intakeDate: new Date().toISOString()
+      });
+      setMachineData({ 
+        name: '', serialNumber: '', class: 'Skill', condition: 'New', notes: '',
+        intakeType: 'Intake', inspected: false, serialReadable: false, bootsToMenu: false, photosTaken: false, storedCorrectly: false,
+        serialMatch: false, stockAdjusted: false, returnStatus: 'Re-deploy',
+        intakeBy: 'Administrator', intakeDate: new Date().toISOString()
+      });
     }
     setIsFormOpen(true);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) return;
     if (activeTab === 'parts') {
       if (editingItem) onUpdatePart({ ...editingItem, ...partData });
       else onAddPart({ ...partData, warehouseId: warehouse.id });
@@ -85,23 +138,8 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
     setIsFormOpen(false);
   };
 
-  const handleExcelSim = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv, .xlsx';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (file) {
-        alert(`Simulating bulk upload for "${file.name}"... Parsing rows into inventory.`);
-        onAddPart({ name: 'Imported Bearing X', partId: 'IMP-900', quantity: 100, threshold: 10, warehouseId: warehouse.id });
-      }
-    };
-    input.click();
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-12">
-      {/* Detail Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <button 
@@ -111,119 +149,21 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Network
+            Facility Network
           </button>
           <div className="flex items-center gap-4">
-             <h1 className="text-3xl font-black text-gray-900 tracking-tight">{warehouse.name}</h1>
+             <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">{warehouse.name}</h1>
              <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full ${
                warehouse.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
              }`}>{warehouse.status}</span>
           </div>
-          <p className="text-gray-500 font-medium">{warehouse.location}</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleExcelSim}
-            className="bg-white border border-gray-200 text-gray-600 px-5 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2"
-          >
-            <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Bulk Upload
-          </button>
-          <button
-            onClick={() => handleOpenForm()}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add {activeTab === 'parts' ? 'Part' : 'Machine'}
-          </button>
+        <div className="flex bg-gray-100 p-1 rounded-2xl w-fit">
+          <button onClick={() => setActiveTab('parts')} className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'parts' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-400'}`}>Parts Stock</button>
+          <button onClick={() => setActiveTab('machines')} className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'machines' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-400'}`}>Machines</button>
         </div>
       </div>
 
-      {/* Segmented Controller & Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="bg-gray-100 p-1.5 rounded-3xl inline-flex gap-1 shadow-inner self-start">
-          <button
-            onClick={() => setActiveTab('parts')}
-            className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'parts' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Part Inventory
-          </button>
-          <button
-            onClick={() => setActiveTab('machines')}
-            className={`px-8 py-3 rounded-[20px] font-black text-sm transition-all ${activeTab === 'machines' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Machine Inventory
-          </button>
-        </div>
-
-        {/* Global Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          {activeTab === 'parts' ? (
-            <div className="relative flex-1 min-w-[300px]">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </span>
-              <input 
-                type="text" 
-                placeholder="Search parts by name or ID..."
-                value={partSearch}
-                onChange={(e) => setPartSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm"
-              />
-            </div>
-          ) : (
-            <>
-              <div className="relative flex-1 min-w-[250px]">
-                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </span>
-                <input 
-                  type="text" 
-                  placeholder="Search machines or SN..."
-                  value={machineSearch}
-                  onChange={(e) => setMachineSearch(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm"
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <select 
-                  value={classFilter}
-                  onChange={(e) => setClassFilter(e.target.value)}
-                  className="px-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm appearance-none cursor-pointer min-w-[120px]"
-                >
-                  <option value="All">All Classes</option>
-                  <option value="Skill">Skill Game</option>
-                  <option value="ATM">ATM Terminal</option>
-                  <option value="Jukebox">Jukebox</option>
-                </select>
-                
-                <select 
-                  value={conditionFilter}
-                  onChange={(e) => setConditionFilter(e.target.value)}
-                  className="px-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold shadow-sm appearance-none cursor-pointer min-w-[120px]"
-                >
-                  <option value="All">All Conditions</option>
-                  <option value="New">New</option>
-                  <option value="Used">Used</option>
-                  <option value="Damaged">Damaged</option>
-                </select>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Main Content Area */}
       <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden min-h-[400px]">
         {activeTab === 'parts' ? (
           <div className="overflow-x-auto p-2">
@@ -233,163 +173,137 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Part Identity</th>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Part Code</th>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">In Stock</th>
-                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Threshold</th>
                   <th className="px-8 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredParts.length > 0 ? filteredParts.map(p => {
-                  const isLow = p.threshold !== undefined && p.quantity <= p.threshold;
-                  return (
-                    <tr key={p.id} className={`transition-colors ${isLow ? 'bg-amber-50/40 hover:bg-amber-50/60' : 'hover:bg-indigo-50/30'}`}>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-gray-900">{p.name}</span>
-                          {isLow && (
-                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black uppercase rounded-md animate-pulse">Low Stock</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-8 py-5 font-mono text-sm text-indigo-600 font-bold bg-indigo-50/30 rounded-lg">{p.partId}</td>
-                      <td className="px-8 py-5">
-                        <span className={`font-black ${isLow ? 'text-amber-600' : 'text-gray-600'}`}>{p.quantity} Units</span>
-                      </td>
-                      <td className="px-8 py-5 text-gray-400 font-bold text-sm">{p.threshold ?? 0}</td>
-                      <td className="px-8 py-5 text-right space-x-4">
-                        <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold transition-colors">Edit</button>
-                        <button onClick={() => onDeletePart(p.id)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">Delete</button>
-                      </td>
-                    </tr>
-                  );
-                }) : (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-medium italic">No parts matching your search criteria.</td>
+                {filteredParts.map(p => (
+                  <tr key={p.id} className="hover:bg-indigo-50/30">
+                    <td className="px-8 py-5">
+                      <div className="font-bold text-gray-900">{p.name}</div>
+                      {p.notes && <div className="text-[10px] text-gray-400 italic truncate max-w-xs">{p.notes}</div>}
+                    </td>
+                    <td className="px-8 py-5 font-mono text-sm text-indigo-600 font-bold">{p.partId}</td>
+                    <td className="px-8 py-5 font-black">{p.quantity} Units</td>
+                    <td className="px-8 py-5 text-right space-x-4">
+                      <button onClick={() => handleOpenForm(p)} className="text-gray-400 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest">View History</button>
+                    </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="p-8">
-            {filteredMachines.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredMachines.map(m => (
-                  <div key={m.id} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 group hover:border-indigo-200 transition-all hover:shadow-xl">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className={`p-4 rounded-2xl ${m.condition === 'New' ? 'bg-green-100 text-green-600' : m.condition === 'Damaged' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {m.class === 'ATM' ? (
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                          ) : m.class === 'Jukebox' ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          )}
-                        </svg>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.class} Class</span>
-                        <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${m.condition === 'New' ? 'text-green-600' : m.condition === 'Damaged' ? 'text-red-600' : 'text-orange-600'}`}>{m.condition}</p>
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-1">{m.name}</h3>
-                    <p className="text-xs text-gray-400 font-bold mb-6">SN: <span className="text-indigo-600">{m.serialNumber}</span></p>
-                    
-                    <div className="flex gap-2">
-                      <button onClick={() => handleOpenForm(m)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-600 hover:border-indigo-200 hover:text-indigo-600 transition-all">Edit</button>
-                      <button onClick={() => onDeleteMachine(m.id)} className="flex-1 py-3 bg-white border border-gray-100 rounded-xl font-bold text-sm text-gray-400 hover:text-red-500 transition-all">Delete</button>
-                    </div>
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMachines.map(m => (
+              <div key={m.id} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 group hover:border-indigo-200 transition-all cursor-pointer" onClick={() => handleOpenForm(m)}>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                      m.intakeType === 'Return' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    }`}>
+                      {m.intakeType || 'Intake'}
+                    </span>
                   </div>
-                ))}
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.condition === 'New' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{m.condition}</span>
+                </div>
+                <h3 className="text-lg font-black text-gray-900 mb-1">{m.name}</h3>
+                <p className="text-xs text-gray-400 font-bold mb-4">SN: {m.serialNumber}</p>
+                {m.notes && <p className="text-[10px] text-slate-500 italic line-clamp-2 border-l-2 border-slate-200 pl-2 mb-4">"{m.notes}"</p>}
+                <button onClick={(e) => { e.stopPropagation(); handleOpenForm(m); }} className="w-full py-2 bg-white border border-gray-100 rounded-xl font-bold text-[10px] uppercase tracking-widest text-indigo-600">View Audit Logs</button>
               </div>
-            ) : (
-              <div className="text-center py-20 text-gray-400 font-medium italic">No machines matching your filters.</div>
-            )}
+            ))}
           </div>
         )}
       </div>
 
-      {/* Asset Form Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-indigo-950/40 backdrop-blur-md" onClick={() => setIsFormOpen(false)} />
-          <form 
-            onSubmit={handleSave}
-            className="relative bg-white w-full max-w-xl rounded-[48px] p-10 shadow-2xl animate-in zoom-in-95 duration-200"
-          >
-            <h2 className="text-2xl font-black text-gray-900 mb-8">{editingItem ? 'Edit' : 'Register New'} {activeTab === 'parts' ? 'Part' : 'Machine'}</h2>
-            
-            <div className="space-y-6">
-              {activeTab === 'parts' ? (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Part Common Name</label>
-                    <input type="text" required value={partData.name} onChange={e => setPartData({...partData, name: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
+          <div className="relative bg-white w-full max-w-xl rounded-[40px] p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
+             <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">{editingItem?.name || 'Asset Registry'}</h2>
+                  <div className="flex gap-2 mt-2">
+                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border bg-indigo-50 text-indigo-600 border-indigo-100`}>
+                      {activeTab === 'parts' ? 'Part Stock' : (machineData.intakeType || 'Intake')} Record
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Part ID / SKU</label>
-                      <input type="text" required value={partData.partId} onChange={e => setPartData({...partData, partId: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Quantity</label>
-                      <input type="number" required value={partData.quantity} onChange={e => setPartData({...partData, quantity: parseInt(e.target.value)})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Minimum Threshold</label>
-                    <input type="number" required value={partData.threshold} onChange={e => setPartData({...partData, threshold: parseInt(e.target.value)})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
-                    <p className="text-[10px] text-gray-400 mt-1 pl-1 italic">Triggers visual alerts when stock falls to or below this level.</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Machine Model Name</label>
-                    <input type="text" required value={machineData.name} onChange={e => setMachineData({...machineData, name: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Serial Number</label>
-                    <input type="text" required value={machineData.serialNumber} onChange={e => setMachineData({...machineData, serialNumber: e.target.value})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Asset Class</label>
-                      <select value={machineData.class} onChange={e => setMachineData({...machineData, class: e.target.value as any})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold">
-                        <option value="Skill">Skill Game</option>
-                        <option value="ATM">ATM Terminal</option>
-                        <option value="Jukebox">Jukebox</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1">Condition</label>
-                      <select value={machineData.condition} onChange={e => setMachineData({...machineData, condition: e.target.value as any})} className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none font-bold">
-                        <option value="New">New / Mint</option>
-                        <option value="Used">Used / Functional</option>
-                        <option value="Damaged">Requires Repair</option>
-                      </select>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                </div>
+                <div className="flex bg-gray-100 p-1 rounded-2xl">
+                  <button type="button" onClick={() => setModalTab('details')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase ${modalTab === 'details' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'}`}>General</button>
+                  <button type="button" onClick={() => setModalTab('history')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase ${modalTab === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'}`}>Audit History</button>
+                </div>
+             </div>
 
-            <div className="flex gap-4 mt-10">
-              <button 
-                type="button" 
-                onClick={() => setIsFormOpen(false)} 
-                className="flex-1 py-5 border border-gray-200 rounded-3xl font-black text-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back
-              </button>
-              <button type="submit" className="flex-2 bg-indigo-600 text-white py-5 rounded-3xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]">
-                {editingItem ? 'Save Updates' : 'Confirm Registration'}
-              </button>
-            </div>
-          </form>
+             {modalTab === 'details' ? (
+                <div className="space-y-6">
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4">Notes / Description</p>
+                    <p className="text-sm font-medium text-gray-700 leading-relaxed italic">"{activeTab === 'parts' ? (partData.notes || 'No description provided.') : (machineData.notes || 'No description provided.')}"</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50 rounded-2xl">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Personnel</p>
+                      <p className="text-sm font-bold text-slate-800">{activeTab === 'parts' ? partData.intakeBy : machineData.intakeBy}</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Intake Date</p>
+                      <p className="text-sm font-bold text-slate-800">{new Date(activeTab === 'parts' ? (partData.intakeDate || Date.now()) : (machineData.intakeDate || Date.now())).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+             ) : (
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 pl-1">Compliance Check Results</p>
+                  <div className="grid grid-cols-1 gap-2">
+                     {activeTab === 'machines' ? (
+                       (machineData.intakeType === 'Return' ? [
+                          { label: "Serial Match Check", key: "serialMatch" },
+                          { label: "Damage Inspection", key: "inspected" },
+                          { label: "Return Photos", key: "photosTaken" },
+                          { label: "Stock Adjusted", key: "stockAdjusted" },
+                       ] : [
+                          { label: "Visual Inspection", key: "inspected" },
+                          { label: "Serial Readability", key: "serialReadable" },
+                          { label: "Boot Test", key: "bootsToMenu" },
+                          { label: "Photos Logged", key: "photosTaken" },
+                          { label: "Storage Zone", key: "storedCorrectly" },
+                       ]).map(item => (
+                          <div key={item.key} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                             <span className="text-xs font-bold text-slate-600">{item.label}</span>
+                             <span className={`text-[10px] font-black uppercase ${machineData[item.key as keyof typeof machineData] ? 'text-emerald-600' : 'text-red-500'}`}>
+                               {machineData[item.key as keyof typeof machineData] ? 'PASS' : 'FAIL'}
+                             </span>
+                          </div>
+                       ))
+                     ) : (
+                       [
+                          { label: "Part Barcodes Scanned", key: "barcodesScanned" },
+                          { label: "Count Verified against Shipment", key: "countVerified" },
+                          { label: "Damaged/Missing Items Logged", key: "damageLogged" },
+                          { label: "Stock Count Updated in System", key: "countUpdated" },
+                       ].map(item => (
+                          <div key={item.key} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                             <span className="text-xs font-bold text-slate-600">{item.label}</span>
+                             <span className={`text-[10px] font-black uppercase ${partData[item.key as keyof typeof partData] ? 'text-emerald-600' : 'text-red-500'}`}>
+                               {partData[item.key as keyof typeof partData] ? 'YES' : 'NO'}
+                             </span>
+                          </div>
+                       ))
+                     )}
+                     {activeTab === 'parts' && (
+                        <div className="flex justify-between items-center p-4 bg-indigo-50 rounded-2xl border border-indigo-100 mt-2">
+                           <span className="text-xs font-bold text-indigo-700 uppercase tracking-tighter">Verified Storage Location</span>
+                           <span className="text-[10px] font-black uppercase text-indigo-700">{partData.locationCorrect || 'Unspecified'}</span>
+                        </div>
+                     )}
+                  </div>
+                </div>
+             )}
+
+             <button type="button" onClick={() => setIsFormOpen(false)} className="w-full bg-indigo-600 text-white py-5 rounded-[28px] font-black shadow-xl mt-10 active:scale-95 transition-all uppercase tracking-widest text-xs">Close Audit File</button>
+          </div>
         </div>
       )}
     </div>

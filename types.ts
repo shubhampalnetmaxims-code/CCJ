@@ -13,7 +13,16 @@ export interface Part {
   name: string;
   partId: string;
   quantity: number;
-  threshold?: number; // Added threshold for stock alerts
+  threshold?: number;
+  notes?: string;
+  // Intake audit fields
+  barcodesScanned?: boolean;
+  countVerified?: boolean;
+  damageLogged?: boolean;
+  locationCorrect?: string;
+  countUpdated?: boolean;
+  intakeBy?: string;
+  intakeDate?: string;
 }
 
 export interface Machine {
@@ -23,9 +32,24 @@ export interface Machine {
   serialNumber: string;
   class: 'Skill' | 'ATM' | 'Jukebox';
   condition: 'New' | 'Used' | 'Damaged';
+  intakeType?: 'Intake' | 'Return';
+  notes?: string;
+  // Common and Intake checklist fields
+  inspected?: boolean;
+  serialReadable?: boolean;
+  bootsToMenu?: boolean;
+  photosTaken?: boolean;
+  storedCorrectly?: boolean;
+  // Return specific fields
+  serialMatch?: boolean;
+  stockAdjusted?: boolean;
+  returnStatus?: 'Re-deploy' | 'Repair' | 'Retire';
+  // History fields
+  intakeBy?: string;
+  intakeDate?: string;
 }
 
-export type StaffRole = 'Warehouse Manager' | 'Inventory Manager' | 'Installer';
+export type StaffRole = 'Warehouse Manager' | 'Inventory Manager' | 'Installer' | 'Site Administrator';
 
 export interface StaffMember {
   id: string;
@@ -45,4 +69,4 @@ export interface User {
   assignedWarehouseIds?: string[];
 }
 
-export type View = 'warehouses' | 'staff' | 'mobile' | 'inventory-mobile' | 'inventory-portal' | 'warehouse-detail';
+export type View = 'warehouses' | 'staff' | 'global-inventory' | 'inventory-portal' | 'warehouse-detail';
