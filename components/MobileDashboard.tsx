@@ -17,6 +17,8 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   user, warehouses, parts, machines, onUpdatePart, onAddPart, onAddMachine, onLogout 
 }) => {
   const isInventoryManager = user.role === 'Inventory Manager';
+  const isInstaller = user.role === 'Installer';
+  
   const [activeMainTab, setActiveMainTab] = useState<'inventory' | 'intake' | 'outward' | 'global' | 'profile'>('inventory');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
   const [activeInventoryTab, setActiveInventoryTab] = useState<'parts' | 'machines'>('parts');
@@ -29,6 +31,9 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   const [intakeWarehouseId, setIntakeWarehouseId] = useState<string | null>(null);
   const [intakeType, setIntakeType] = useState<'machine' | 'part' | null>(null);
   const [machineSubtype, setMachineSubtype] = useState<'Intake' | 'Return' | null>(null);
+
+  // Outward Sub-view State
+  const [outwardSubView, setOutwardSubView] = useState<'selection' | 'dispatch' | 'transfer' | 'request'>('selection');
 
   const [intakeMachineData, setIntakeMachineData] = useState<Omit<Machine, 'id' | 'warehouseId'>>({
     name: '', serialNumber: '', class: 'Skill', condition: 'New', notes: '',
@@ -73,7 +78,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   };
 
   const handleCompleteIntake = () => {
-    if (!intakeWarehouseId || isInventoryManager) return;
+    if (!intakeWarehouseId || isInventoryManager || isInstaller) return;
 
     if (intakeType === 'machine') {
       onAddMachine({
@@ -110,7 +115,59 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
     });
   };
 
+  // Helper for Installer Under Development screen
+  const renderInstallerPlaceholder = (title: string, subtitle: string) => (
+    <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
+      <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+        <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">{title}</h2>
+        <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest mt-0.5">{subtitle}</p>
+      </header>
+
+      <main className="flex-1 flex flex-col items-center justify-center px-8 text-center pb-32">
+        <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-6">
+          <svg className="w-12 h-12 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Portal Under Design</h3>
+        <p className="text-sm text-slate-400 font-medium mt-2 leading-relaxed">
+          The Installer-specific task management module is currently under development.
+        </p>
+        <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-100">
+          <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Awaiting Beta release</span>
+        </div>
+      </main>
+    </div>
+  );
+
   const renderOutward = () => {
+    if (isInstaller) return renderInstallerPlaceholder("Installer Tasks", "Field Deployment");
+    
+    if (outwardSubView !== 'selection') {
+      return (
+        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
+           <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+              <button onClick={() => setOutwardSubView('selection')} className="text-indigo-600 font-black text-[10px] uppercase mb-2 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back to Selection
+              </button>
+              <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">{outwardSubView} Pending</h2>
+          </header>
+          <main className="flex-1 flex flex-col items-center justify-center px-8 text-center pb-32">
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+              <svg className="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">System Updating</h3>
+            <p className="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest leading-relaxed">
+              Sub-module under development
+            </p>
+          </main>
+        </div>
+      );
+    }
+
     return (
       <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
         <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
@@ -118,19 +175,71 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Logistics & Release</p>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center px-8 text-center pb-32">
-          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+        <main className="flex-1 overflow-y-auto px-5 py-6 space-y-4 pb-32">
+          <div className="mb-4">
+             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Operational Type</h3>
           </div>
-          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Feature in Progress</h3>
-          <p className="text-sm text-slate-400 font-medium mt-2 leading-relaxed">
-            The Outward Release and Logistics module is currently under active development.
-          </p>
-          <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-100">
-            <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Scheduled for Q2 Release</span>
+
+          {/* Option 1: Dispatch */}
+          <button 
+            onClick={() => setOutwardSubView('dispatch')}
+            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
+          >
+            <div className="w-14 h-14 bg-indigo-600 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-indigo-100 group-hover:rotate-6 transition-transform">
+               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+               </svg>
+            </div>
+            <div className="text-left">
+              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">1. Dispatch</span>
+              <span className="block text-[9px] font-bold text-indigo-500 uppercase mt-0.5">Handoff to Installer</span>
+            </div>
+            <div className="ml-auto text-slate-200">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </button>
+
+          {/* Option 2: Transfer */}
+          <button 
+            onClick={() => setOutwardSubView('transfer')}
+            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
+          >
+            <div className="w-14 h-14 bg-emerald-500 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-emerald-100 group-hover:-rotate-6 transition-transform">
+               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+               </svg>
+            </div>
+            <div className="text-left">
+              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">2. Transfer</span>
+              <span className="block text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Facility Move</span>
+            </div>
+            <div className="ml-auto text-slate-200">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </button>
+
+          {/* Option 3: Request */}
+          <button 
+            onClick={() => setOutwardSubView('request')}
+            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
+          >
+            <div className="w-14 h-14 bg-amber-500 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-amber-100 group-hover:scale-110 transition-transform">
+               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+               </svg>
+            </div>
+            <div className="text-left">
+              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">3. Request</span>
+              <span className="block text-[9px] font-bold text-amber-600 uppercase mt-0.5">Stock Replenishment</span>
+            </div>
+            <div className="ml-auto text-slate-200">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </button>
+
+          <div className="mt-8 flex items-center gap-2 px-6 py-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none">Modules scheduled for release</span>
           </div>
         </main>
       </div>
@@ -138,7 +247,8 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   };
 
   const renderIntake = () => {
-    if (isInventoryManager) return null;
+    if (isInventoryManager || isInstaller) return renderInstallerPlaceholder("Inventory Intake", "Asset Log");
+    
     return (
       <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
         <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
@@ -486,6 +596,8 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   };
 
   const renderInventory = () => {
+    if (isInstaller) return renderInstallerPlaceholder("Inventory Viewer", "Global Stock");
+    
     if (selectedWarehouse) {
       return (
         <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
@@ -720,20 +832,33 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
     );
   };
 
+  const getNavColorClass = (tab: string) => {
+    if (activeMainTab !== tab) return 'text-[#94a3b8]';
+    if (isInstaller) return 'text-amber-500';
+    if (isInventoryManager) return 'text-indigo-600';
+    return 'text-[#009e60]';
+  };
+
+  const getProfileIconClass = () => {
+    if (isInstaller) return 'bg-amber-500 shadow-amber-100';
+    if (isInventoryManager) return 'bg-indigo-600 shadow-indigo-100';
+    return 'bg-emerald-600 shadow-emerald-100';
+  };
+
   return (
     <div className="h-full flex flex-col bg-[#fcfdfe]">
       <div className="flex-1 relative overflow-hidden">
         {activeMainTab === 'inventory' && renderInventory()}
-        {activeMainTab === 'intake' && !isInventoryManager && renderIntake()}
+        {activeMainTab === 'intake' && renderIntake()}
         {activeMainTab === 'outward' && renderOutward()}
         {activeMainTab === 'global' && isInventoryManager && renderGlobalStock()}
         {activeMainTab === 'profile' && (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl text-white font-bold border-4 border-white shadow-xl mb-6 ${isInventoryManager ? 'bg-indigo-600 shadow-indigo-100' : 'bg-emerald-600 shadow-emerald-100'}`}>
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl text-white font-bold border-4 border-white shadow-xl mb-6 ${getProfileIconClass()}`}>
               {user.name.charAt(0)}
             </div>
             <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">{user.name}</h3>
-            <p className={`text-xs font-black uppercase tracking-widest mt-1 ${isInventoryManager ? 'text-indigo-500' : 'text-emerald-600'}`}>{user.role}</p>
+            <p className={`text-xs font-black uppercase tracking-widest mt-1 ${isInstaller ? 'text-amber-600' : (isInventoryManager ? 'text-indigo-500' : 'text-emerald-600')}`}>{user.role}</p>
             <button 
               onClick={onLogout}
               className="mt-12 w-full max-w-[200px] py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-red-500 transition-colors"
@@ -744,176 +869,21 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         )}
       </div>
 
-      {/* Threshold Modal */}
-      {editingThreshold && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEditingThreshold(null)} />
-          <div className="relative bg-white w-full max-w-[280px] rounded-[32px] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h4 className="text-sm font-black text-[#0f172a] uppercase mb-4 text-center">Threshold Alert Level</h4>
-            <input 
-              type="number" 
-              className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-center font-black text-xl mb-4"
-              value={editingThreshold.value}
-              onChange={e => setEditingThreshold({ ...editingThreshold, value: parseInt(e.target.value) || 0 })}
-            />
-            <button 
-              onClick={() => handleThresholdSave(parts.find(p => p.id === editingThreshold.id)!)}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100"
-            >
-              Update Threshold
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Part History Modal */}
-      {selectedPartHistory && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedPartHistory(null)} />
-           <div className="relative bg-white w-full max-w-[340px] rounded-t-[40px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85%] overflow-y-auto pb-20">
-              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-xl font-black text-[#0f172a] uppercase tracking-tighter">{selectedPartHistory.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SKU: {selectedPartHistory.partId}</p>
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Audit Meta</p>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-slate-500">Personnel</span>
-                      <span className="text-[11px] font-black text-indigo-600">{selectedPartHistory.intakeBy || 'Administrator'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-slate-500">Intake Date</span>
-                      <span className="text-[11px] font-black text-[#0f172a]">{selectedPartHistory.intakeDate ? new Date(selectedPartHistory.intakeDate).toLocaleDateString() : 'Historical'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedPartHistory.notes && (
-                  <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100">
-                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-2">Description / Notes</p>
-                    <p className="text-xs font-bold text-slate-700 leading-relaxed italic">"{selectedPartHistory.notes}"</p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Intake Compliance</p>
-                  {[
-                    { label: "Barcodes Scanned", key: "barcodesScanned" },
-                    { label: "Count Verified", key: "countVerified" },
-                    { label: "Damage Logged", key: "damageLogged" },
-                    { label: "Count Updated", key: "countUpdated" },
-                  ].map(item => (
-                    <div key={item.key} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                       <span className="text-[11px] font-bold text-slate-600">{item.label}</span>
-                       <span className={`text-[9px] font-black uppercase ${selectedPartHistory[item.key as keyof Part] ? 'text-emerald-600' : 'text-red-500'}`}>
-                         {selectedPartHistory[item.key as keyof Part] ? 'YES' : 'NO'}
-                       </span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                     <span className="text-[11px] font-bold text-slate-600">Storage Location</span>
-                     <span className="text-[9px] font-black uppercase text-indigo-600">{selectedPartHistory.locationCorrect || 'Unspecified'}</span>
-                  </div>
-                </div>
-              </div>
-              <button onClick={() => setSelectedPartHistory(null)} className="w-full bg-slate-50 text-slate-400 py-4 rounded-[22px] font-black text-xs uppercase tracking-widest mt-8">Exit Audit</button>
-           </div>
-        </div>
-      )}
-
-      {/* Machine Audit Log Modal */}
-      {selectedMachineHistory && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center animate-in fade-in duration-300">
-           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedMachineHistory(null)} />
-           <div className="relative bg-white w-full max-w-[340px] rounded-t-[40px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85%] overflow-y-auto pb-20">
-              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-black text-[#0f172a] uppercase tracking-tighter">{selectedMachineHistory.name}</h3>
-                    <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${
-                      selectedMachineHistory.intakeType === 'Return' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                    }`}>
-                      {selectedMachineHistory.intakeType || 'Intake'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SN: {selectedMachineHistory.serialNumber}</p>
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Audit Meta</p>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-slate-500">Personnel</span>
-                      <span className="text-[11px] font-black text-indigo-600">{selectedMachineHistory.intakeBy || 'Administrator'}</span>
-                    </div>
-                    {selectedMachineHistory.intakeType === 'Return' && (
-                       <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-slate-500">Return Status</span>
-                        <span className="text-[11px] font-black text-orange-600 uppercase">{selectedMachineHistory.returnStatus}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedMachineHistory.notes && (
-                  <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100">
-                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-2">Description / Notes</p>
-                    <p className="text-xs font-bold text-slate-700 leading-relaxed italic">"{selectedMachineHistory.notes}"</p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Compliance Checklist</p>
-                  {(selectedMachineHistory.intakeType === 'Return' ? [
-                    { label: "Matched Serial", key: "serialMatch" },
-                    { label: "Damage Inspected", key: "inspected" },
-                    { label: "Photos Logged", key: "photosTaken" },
-                    { label: "Stock Level Adjusted", key: "stockAdjusted" },
-                  ] : [
-                    { label: "Visual Inspection", key: "inspected" },
-                    { label: "Serial Readability", key: "serialReadable" },
-                    { label: "Menu Boot Check", key: "bootsToMenu" },
-                    { label: "Photos Logged", key: "photosTaken" },
-                    { label: "Storage Check", key: "storedCorrectly" },
-                  ]).map(item => (
-                    <div key={item.key} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                       <span className="text-[11px] font-bold text-slate-600">{item.label}</span>
-                       <span className={`text-[9px] font-black uppercase ${selectedMachineHistory[item.key as keyof Machine] ? 'text-emerald-600' : 'text-red-500'}`}>
-                         {selectedMachineHistory[item.key as keyof Machine] ? 'PASS' : 'FAIL'}
-                       </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button onClick={() => setSelectedMachineHistory(null)} className="w-full bg-slate-50 text-slate-400 py-4 rounded-[22px] font-black text-xs uppercase tracking-widest mt-8">Exit Audit</button>
-           </div>
-        </div>
-      )}
-
       <nav className="px-8 py-4 bg-white border-t border-[#f1f5f9] flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.03)] shrink-0 pb-7 z-30">
         <button 
           onClick={() => setActiveMainTab('inventory')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'inventory' ? (isInventoryManager ? 'text-indigo-600' : 'text-[#009e60]') : 'text-[#94a3b8]'}`}
+          className={`flex flex-col items-center gap-1 transition-all ${getNavColorClass('inventory')}`}
         >
           <svg className="w-5 h-5" fill={activeMainTab === 'inventory' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span className="text-[7px] font-black uppercase tracking-tighter">Facilities</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">{isInstaller ? 'Global Stock' : 'Facilities'}</span>
         </button>
         
         {isInventoryManager ? (
           <button 
             onClick={() => setActiveMainTab('global')}
-            className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'global' ? 'text-indigo-600' : 'text-[#94a3b8]'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${getNavColorClass('global')}`}
           >
             <svg className="w-5 h-5" fill={activeMainTab === 'global' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -923,28 +893,28 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         ) : (
           <button 
             onClick={() => { setActiveMainTab('intake'); setIntakeStep('warehouse'); }}
-            className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'intake' ? 'text-[#009e60]' : 'text-[#94a3b8]'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${getNavColorClass('intake')}`}
           >
             <svg className="w-5 h-5" fill={activeMainTab === 'intake' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-[7px] font-black uppercase tracking-tighter">Intake</span>
+            <span className="text-[7px] font-black uppercase tracking-tighter">{isInstaller ? 'Assigned' : 'Intake'}</span>
           </button>
         )}
 
         <button 
-          onClick={() => { setActiveMainTab('outward'); }}
-          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'outward' ? 'text-indigo-600' : 'text-[#94a3b8]'}`}
+          onClick={() => { setActiveMainTab('outward'); setOutwardSubView('selection'); }}
+          className={`flex flex-col items-center gap-1 transition-all ${getNavColorClass('outward')}`}
         >
           <svg className="w-5 h-5" fill={activeMainTab === 'outward' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          <span className="text-[7px] font-black uppercase tracking-tighter">Outward</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">{isInstaller ? 'Tasks' : 'Outward'}</span>
         </button>
 
         <button 
           onClick={() => setActiveMainTab('profile')}
-          className={`flex flex-col items-center gap-1 transition-all ${activeMainTab === 'profile' ? (isInventoryManager ? 'text-indigo-600' : 'text-[#009e60]') : 'text-[#94a3b8]'}`}
+          className={`flex flex-col items-center gap-1 transition-all ${getNavColorClass('profile')}`}
         >
           <svg className="w-5 h-5" fill={activeMainTab === 'profile' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

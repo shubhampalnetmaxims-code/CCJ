@@ -7,6 +7,7 @@ interface LoginProps {
   staffMembers?: StaffMember[];
   onMobileClick?: () => void;
   onInventoryMobileClick?: () => void;
+  onInstallerClick?: () => void;
   isMobileView?: boolean;
   initialRole?: StaffRole;
 }
@@ -16,6 +17,7 @@ const Login: React.FC<LoginProps> = ({
   staffMembers = [], 
   onMobileClick, 
   onInventoryMobileClick,
+  onInstallerClick,
   isMobileView = false,
   initialRole
 }) => {
@@ -33,6 +35,9 @@ const Login: React.FC<LoginProps> = ({
       } else if (initialRole === 'Inventory Manager') {
         setEmail('inventory@gmail.com');
         setPassword('inventory');
+      } else if (initialRole === 'Installer') {
+        setEmail('installer@gmail.com');
+        setPassword('installer');
       }
     } else if (!isMobileView) {
       setEmail('admin@gmail.com');
@@ -55,7 +60,7 @@ const Login: React.FC<LoginProps> = ({
         return;
       }
 
-      // Staff Login (Warehouse & Inventory Managers)
+      // Staff Login
       const staffUser = staffMembers.find(s => 
         s.email === email && s.password === password
       );
@@ -75,10 +80,22 @@ const Login: React.FC<LoginProps> = ({
 
   if (isMobileView) {
     const isInventoryRole = initialRole === 'Inventory Manager';
+    const isInstallerRole = initialRole === 'Installer';
+    
+    let accentColor = isInventoryRole ? 'indigo-600' : 'emerald-600';
+    let ringColor = isInventoryRole ? 'focus:ring-indigo-600' : 'focus:ring-emerald-600';
+    let shadowColor = isInventoryRole ? 'shadow-indigo-100' : 'shadow-emerald-100';
+
+    if (isInstallerRole) {
+      accentColor = 'amber-500';
+      ringColor = 'focus:ring-amber-500';
+      shadowColor = 'shadow-amber-100';
+    }
+
     return (
       <div className="h-full flex flex-col bg-white p-8 pt-16 animate-in fade-in duration-500">
         <div className="mb-12 text-center">
-          <div className={`w-20 h-20 rounded-[24px] shadow-2xl flex items-center justify-center mb-6 mx-auto ${isInventoryRole ? 'bg-indigo-600 shadow-indigo-100' : 'bg-[#009e60] shadow-[#009e60]/20'}`}>
+          <div className={`w-20 h-20 rounded-[24px] shadow-2xl flex items-center justify-center mb-6 mx-auto bg-${accentColor} ${shadowColor}`}>
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
@@ -92,7 +109,7 @@ const Login: React.FC<LoginProps> = ({
             <input
               type="email"
               required
-              className={`w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 transition-all text-[15px] font-bold text-[#1e293b] shadow-sm ${isInventoryRole ? 'focus:ring-indigo-600' : 'focus:ring-[#009e60]'}`}
+              className={`w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 transition-all text-[15px] font-bold text-[#1e293b] shadow-sm ${ringColor}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -103,7 +120,7 @@ const Login: React.FC<LoginProps> = ({
               <input
                 type={showPassword ? "text" : "password"}
                 required
-                className={`w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 transition-all text-[15px] font-bold text-[#1e293b] shadow-sm ${isInventoryRole ? 'focus:ring-indigo-600' : 'focus:ring-[#009e60]'}`}
+                className={`w-full px-6 py-4 bg-[#f8fafc] border border-[#f1f5f9] rounded-2xl focus:outline-none focus:ring-2 transition-all text-[15px] font-bold text-[#1e293b] shadow-sm ${ringColor}`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -113,7 +130,7 @@ const Login: React.FC<LoginProps> = ({
           <button
             type="submit"
             disabled={loading}
-            className={`w-full text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl mt-6 active:scale-95 transition-all ${isInventoryRole ? 'bg-indigo-600 shadow-indigo-100' : 'bg-[#009e60] shadow-[#009e60]/20'}`}
+            className={`w-full text-white py-5 rounded-[22px] font-black text-sm uppercase tracking-widest shadow-xl mt-6 active:scale-95 transition-all bg-${accentColor} ${shadowColor}`}
           >
             {loading ? 'Authenticating...' : 'Establish Session'}
           </button>
@@ -167,9 +184,12 @@ const Login: React.FC<LoginProps> = ({
             </button>
           </form>
           
-          <div className="mt-8 flex items-center gap-4">
-            <button onClick={onMobileClick} className="flex-1 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 py-3 rounded-xl border border-emerald-100">Warehouse App</button>
-            <button onClick={onInventoryMobileClick} className="flex-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 py-3 rounded-xl border border-indigo-100">Inventory App</button>
+          <div className="mt-8 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={onMobileClick} className="flex-1 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 py-3 rounded-xl border border-emerald-100">Warehouse App</button>
+              <button onClick={onInventoryMobileClick} className="flex-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 py-3 rounded-xl border border-indigo-100">Inventory App</button>
+            </div>
+            <button onClick={onInstallerClick} className="w-full text-[9px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 py-3 rounded-xl border border-amber-100">Installer Portal</button>
           </div>
         </div>
       </div>

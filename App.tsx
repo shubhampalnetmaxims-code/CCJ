@@ -150,13 +150,23 @@ const App: React.FC = () => {
       role: 'Warehouse Manager',
       assignedWarehouseIds: ['1', '2', '3'],
       createdAt: new Date().toISOString()
+    },
+    {
+      id: 'inst-1',
+      name: 'Installer User',
+      email: 'installer@gmail.com',
+      contact: '555-0300',
+      password: 'installer',
+      role: 'Installer',
+      assignedWarehouseIds: ['1'],
+      createdAt: new Date().toISOString()
     }
   ]);
 
   const handleLogin = (u: User) => {
     setUser(u);
-    // Role Logic: Admin is Desktop. All Managers (Warehouse & Inventory) use Mobile.
-    if (u.role === 'Warehouse Manager' || u.role === 'Inventory Manager') {
+    // All mobile roles go to emulation
+    if (u.role === 'Warehouse Manager' || u.role === 'Inventory Manager' || u.role === 'Installer') {
       setIsEmulatingMobile(true);
       setCurrentView('inventory-portal');
     } else {
@@ -190,6 +200,8 @@ const App: React.FC = () => {
 
   const updatePart = (p: Part) => setParts(prev => prev.map(item => item.id === p.id ? p : item));
   const updateMachine = (m: Machine) => setMachines(prev => prev.map(item => item.id === m.id ? m : item));
+  const addPart = (p: Omit<Part, 'id'>) => setParts(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9) }]);
+  const addMachine = (m: Omit<Machine, 'id'>) => setMachines(prev => [...prev, { ...m, id: Math.random().toString(36).substr(2, 9) }]);
 
   if (isEmulatingMobile) {
     return (
@@ -208,8 +220,8 @@ const App: React.FC = () => {
             parts={parts}
             machines={machines}
             onUpdatePart={updatePart}
-            onAddPart={(p) => setParts(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9) }])}
-            onAddMachine={(m) => setMachines(prev => [...prev, { ...m, id: Math.random().toString(36).substr(2, 9) }])}
+            onAddPart={addPart}
+            onAddMachine={addMachine}
             onLogout={handleLogout} 
           />
         )}
@@ -224,6 +236,7 @@ const App: React.FC = () => {
         staffMembers={staffMembers}
         onMobileClick={() => handleStartEmulation('Warehouse Manager')} 
         onInventoryMobileClick={() => handleStartEmulation('Inventory Manager')}
+        onInstallerClick={() => handleStartEmulation('Installer')}
       />
     );
   }
@@ -244,6 +257,7 @@ const App: React.FC = () => {
           user={user} 
           onMobileClick={() => handleStartEmulation('Warehouse Manager')} 
           onInventoryMobileClick={() => handleStartEmulation('Inventory Manager')}
+          onInstallerClick={() => handleStartEmulation('Installer')}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {currentView === 'warehouses' && (
@@ -262,6 +276,9 @@ const App: React.FC = () => {
               warehouses={warehouses}
               onUpdatePart={updatePart}
               onUpdateMachine={updateMachine}
+              onAddPart={addPart}
+              onAddMachine={addMachine}
+              currentUser={user}
             />
           )}
           {currentView === 'staff' && isAdmin && (
@@ -278,13 +295,14 @@ const App: React.FC = () => {
               warehouse={selectedWarehouse}
               parts={parts.filter(p => p.warehouseId === selectedWarehouse.id)}
               machines={machines.filter(m => m.warehouseId === selectedWarehouse.id)}
-              onAddPart={(p) => setParts(prev => [...prev, { ...p, id: Math.random().toString(36).substr(2, 9), warehouseId: selectedWarehouse.id }])}
+              onAddPart={(p) => addPart({ ...p, warehouseId: selectedWarehouse.id })}
               onUpdatePart={updatePart}
               onDeletePart={(id) => setParts(prev => prev.filter(p => p.id !== id))}
-              onAddMachine={(m) => setMachines(prev => [...prev, { ...m, id: Math.random().toString(36).substr(2, 9), warehouseId: selectedWarehouse.id }])}
+              onAddMachine={(m) => addMachine({ ...m, warehouseId: selectedWarehouse.id })}
               onUpdateMachine={updateMachine}
               onDeleteMachine={(id) => setMachines(prev => prev.filter(m => m.id !== id))}
               onBack={() => setCurrentView('warehouses')}
+              currentUser={user}
             />
           )}
         </main>

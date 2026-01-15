@@ -6,9 +6,10 @@ interface HeaderProps {
   user: User;
   onMobileClick?: () => void;
   onInventoryMobileClick?: () => void;
+  onInstallerClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onMobileClick, onInventoryMobileClick }) => {
+const Header: React.FC<HeaderProps> = ({ user, onMobileClick, onInventoryMobileClick, onInstallerClick }) => {
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
       <div className="flex-1 max-w-2xl flex items-center gap-3">
@@ -28,22 +29,32 @@ const Header: React.FC<HeaderProps> = ({ user, onMobileClick, onInventoryMobileC
         <div className="hidden md:flex items-center gap-2">
           <button 
             onClick={onMobileClick}
-            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-bold border border-indigo-100 hover:bg-indigo-100 transition-all active:scale-95 text-xs whitespace-nowrap"
+            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-bold border border-indigo-100 hover:bg-indigo-100 transition-all active:scale-95 text-[10px] whitespace-nowrap"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            Warehouse Manager
+            Warehouse
           </button>
           
           <button 
             onClick={onInventoryMobileClick}
-            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-bold border border-emerald-100 hover:bg-emerald-100 transition-all active:scale-95 text-xs whitespace-nowrap"
+            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-bold border border-emerald-100 hover:bg-emerald-100 transition-all active:scale-95 text-[10px] whitespace-nowrap"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            Inventory Manager
+            Inventory
+          </button>
+
+          <button 
+            onClick={onInstallerClick}
+            className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg font-bold border border-amber-100 hover:bg-amber-100 transition-all active:scale-95 text-[10px] whitespace-nowrap"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Installer
           </button>
         </div>
       </div>
