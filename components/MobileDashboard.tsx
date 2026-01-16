@@ -178,7 +178,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   };
 
   const handleTransferSubmit = () => {
-    const destWHName = warehouses.find(w => w.id === transferData.destWH)?.name || 'Target Facility';
+    const destWHName = warehouses.find(w => w.id === transferData.destWH)?.name || 'Target Warehouse';
     const actionLogs: string[] = [];
 
     transferData.selectedItems.forEach((qty, itemId) => {
@@ -267,7 +267,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                 <p className="text-sm font-bold text-slate-800">{type === 'part' ? item.partId : item.serialNumber}</p>
              </div>
              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Facility</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Warehouse</p>
                 <p className="text-sm font-bold text-slate-800">{warehouses.find(w => w.id === item.warehouseId)?.name}</p>
              </div>
              {item.notes && (
@@ -386,7 +386,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
       <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
         <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
           <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Service Orders</h2>
-          <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Facility Maintenance Log</p>
+          <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Maintenance Log</p>
         </header>
 
         <main className="flex-1 overflow-y-auto px-5 py-6 space-y-4 pb-32">
@@ -405,7 +405,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                 <div className="flex items-center gap-2 mb-2 px-1">
                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">
-                      Assigning to facility: {assignedWarehouses[0]?.name || warehouses[0]?.name}
+                      Assigning to warehouse: {assignedWarehouses[0]?.name || warehouses[0]?.name}
                    </p>
                 </div>
                 <input 
@@ -453,7 +453,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                 </div>
               ) : (
                 workOrders.map(wo => {
-                  const facility = warehouses.find(w => w.id === wo.warehouseId);
+                  const warehouse = warehouses.find(w => w.id === wo.warehouseId);
                   const assignee = staffMembers.find(s => s.id === wo.assignedToId);
                   const isAssignedToMe = user.id === wo.assignedToId;
 
@@ -465,7 +465,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                               wo.priority === 'High' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'
                             }`}>{wo.priority} Priority</span>
                             <h3 className="font-black text-[#0f172a] text-sm uppercase leading-tight">{wo.title}</h3>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{facility?.name}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{warehouse?.name}</p>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                              <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-xl ${
@@ -544,855 +544,6 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                   );
                 })
               )}
-            </div>
-          )}
-        </main>
-      </div>
-    );
-  };
-
-  const renderOutward = () => {
-    if (isInstaller) return renderInstallerPlaceholder("Installer Tasks", "Field Deployment");
-    
-    if (isInventoryManager) {
-      return (
-        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
-          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
-            <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Outward Shipment Log</h2>
-            <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Dispatched & Transferred Records</p>
-            <div className="mt-4 relative">
-               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-300">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-               </span>
-               <input 
-                 type="text" 
-                 placeholder="Search movement log..." 
-                 value={outwardSearch}
-                 onChange={(e) => setOutwardSearch(e.target.value)}
-                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-               />
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-y-auto px-5 py-6 space-y-4 pb-32">
-             {movedAssets.length === 0 ? (
-               <div className="py-20 text-center opacity-40">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                  <p className="text-sm font-bold text-slate-500">No outward records found</p>
-               </div>
-             ) : (
-               movedAssets.map(item => (
-                 <div 
-                   key={item.id} 
-                   onClick={() => setSelectedAuditItem({ type: item.type, item })}
-                   className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden"
-                 >
-                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.type === 'part' ? 'bg-indigo-400' : 'bg-emerald-400'}`} />
-                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.type === 'part' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                      {item.type === 'part' ? (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                      ) : (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-                      )}
-                   </div>
-                   <div className="flex-1 min-w-0">
-                      <h3 className="font-black text-[#0f172a] text-sm truncate uppercase tracking-tight">{item.name}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                         <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type === 'part' ? (item as any).partId : (item as any).serialNumber}</span>
-                         <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                         <span className="text-[9px] font-black text-indigo-500 uppercase">{warehouses.find(w => w.id === item.warehouseId)?.name}</span>
-                      </div>
-                   </div>
-                   <div className="text-right shrink-0">
-                      <div className="flex items-center gap-1 justify-end text-emerald-600">
-                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                         <span className="text-[8px] font-black uppercase">Moved</span>
-                      </div>
-                      <p className="text-[10px] font-black text-[#0f172a] mt-0.5">{item.type === 'part' ? (item as any).quantity : '1'} <span className="text-[7px] text-slate-400">UNIT</span></p>
-                   </div>
-                 </div>
-               ))
-             )}
-          </main>
-        </div>
-      );
-    }
-
-    if (outwardSubView === 'success') {
-      return (
-        <div className="h-full flex flex-col items-center justify-center text-center px-8 bg-white animate-in zoom-in-95 duration-300">
-           <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-8 animate-bounce">
-              <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
-           </div>
-           <h3 className="text-2xl font-black text-[#0f172a] uppercase tracking-tight">Bulk Dispatch Complete</h3>
-           <p className="text-slate-500 text-sm font-medium mt-2">All selected items have been logged and moved.</p>
-           <button 
-            onClick={resetTransfer}
-            className="mt-12 w-full bg-slate-900 text-white py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
-           >
-             Finish Session
-           </button>
-        </div>
-      );
-    }
-
-    if (outwardSubView === 'transfer') {
-      const sourceWHObj = warehouses.find(w => w.id === transferData.sourceWH);
-      const destWHObj = warehouses.find(w => w.id === transferData.destWH);
-      const availableItems = transferData.category === 'parts' 
-        ? parts.filter(p => p.warehouseId === transferData.sourceWH)
-        : machines.filter(m => m.warehouseId === transferData.sourceWH);
-
-      // Only show Accepted WOs assigned to this user
-      const myAcceptedWorkOrders = workOrders.filter(wo => 
-        wo.assignedToId === user.id && wo.status === 'Accepted'
-      );
-
-      return (
-        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
-           <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
-              <div className="flex justify-between items-center mb-2">
-                <button onClick={() => {
-                   if (transferStep === 'workorder_link') setOutwardSubView('selection');
-                   else if (transferStep === 'source') setTransferStep('workorder_link');
-                   else if (transferStep === 'category') setTransferStep('source');
-                   else if (transferStep === 'items') setTransferStep('category');
-                   else if (transferStep === 'quantities') setTransferStep('items');
-                   else if (transferStep === 'destination') setTransferStep(transferData.category === 'parts' ? 'quantities' : 'items');
-                   else if (transferStep === 'notes') setTransferStep('destination');
-                   else if (transferStep === 'summary') setTransferStep('notes');
-                }} className="text-indigo-600 font-black text-[10px] uppercase flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back
-                </button>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Multi-Item Transfer</span>
-              </div>
-              <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">
-                {transferStep === 'workorder_link' && 'Link Activity'}
-                {transferStep === 'source' && 'Select Source'}
-                {transferStep === 'category' && 'Asset Category'}
-                {transferStep === 'items' && 'Select Assets'}
-                {transferStep === 'quantities' && 'Review Quantities'}
-                {transferStep === 'destination' && 'Select Destination'}
-                {transferStep === 'notes' && 'Shipping Notes'}
-                {transferStep === 'summary' && 'Review Dispatch'}
-              </h2>
-              <div className="mt-4 flex gap-1">
-                {['workorder_link', 'source', 'items', 'destination', 'summary'].map((s, idx) => (
-                  <div key={idx} className={`h-1 flex-1 rounded-full ${['workorder_link','source','category','items','quantities','destination','notes','summary'].indexOf(transferStep) >= ['workorder_link','source','items','destination','summary'].indexOf(s) ? 'bg-indigo-600' : 'bg-slate-100'}`} />
-                ))}
-              </div>
-          </header>
-
-          <main className="flex-1 overflow-y-auto px-5 py-6 pb-24">
-             {transferStep === 'workorder_link' && (
-                <div className="space-y-4 animate-in slide-in-from-right duration-300">
-                  <div className="bg-indigo-50 p-6 rounded-[32px] border border-indigo-100">
-                    <h3 className="text-sm font-black text-indigo-900 uppercase tracking-tight mb-2">Relate to Order</h3>
-                    <p className="text-xs text-indigo-600/70 font-medium leading-relaxed">
-                      Please select the active service order this transfer is associated with.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {myAcceptedWorkOrders.length > 0 ? (
-                      myAcceptedWorkOrders.map(wo => (
-                        <button 
-                          key={wo.id}
-                          onClick={() => { setTransferData({...transferData, linkedWorkOrderId: wo.id}); setTransferStep('source'); }}
-                          className={`w-full p-5 rounded-[28px] border text-left transition-all active:scale-[0.98] ${transferData.linkedWorkOrderId === wo.id ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-100 text-slate-800'}`}
-                        >
-                           <div className="flex justify-between items-start">
-                              <span className="font-bold text-sm uppercase tracking-tight">{wo.title}</span>
-                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${transferData.linkedWorkOrderId === wo.id ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>{wo.priority}</span>
-                           </div>
-                           <p className={`text-[10px] font-medium mt-1 ${transferData.linkedWorkOrderId === wo.id ? 'text-indigo-100' : 'text-slate-400'}`}>{warehouses.find(w => w.id === wo.warehouseId)?.name}</p>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="py-8 text-center text-slate-400">
-                         <p className="text-xs font-bold italic">No accepted orders assigned to you.</p>
-                      </div>
-                    )}
-                    
-                    <button 
-                      onClick={() => { setTransferData({...transferData, linkedWorkOrderId: ''}); setTransferStep('source'); }}
-                      className="w-full py-4 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-indigo-600 transition-colors"
-                    >
-                       Continue without Work Order
-                    </button>
-                  </div>
-                </div>
-             )}
-
-             {transferStep === 'source' && (
-               <div className="space-y-3">
-                 {assignedWarehouses.map(w => (
-                   <button 
-                    key={w.id}
-                    onClick={() => { setTransferData({...transferData, sourceWH: w.id}); setTransferStep('category'); }}
-                    className="w-full bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all"
-                   >
-                     <div className="text-left">
-                       <p className="font-bold text-[#0f172a]">{w.name}</p>
-                       <p className="text-[10px] text-slate-400 font-bold">From current facility</p>
-                     </div>
-                     <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                   </button>
-                 ))}
-               </div>
-             )}
-
-             {transferStep === 'category' && (
-               <div className="grid grid-cols-1 gap-4">
-                 <button 
-                  onClick={() => { setTransferData({...transferData, category: 'parts', selectedItems: new Map()}); setTransferStep('items'); }}
-                  className="bg-white border-2 border-slate-100 p-8 rounded-[40px] flex flex-col items-center gap-3 active:scale-95 shadow-sm"
-                 >
-                   <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                   </div>
-                   <span className="font-black text-xs uppercase tracking-widest text-slate-800">Parts Registry</span>
-                 </button>
-                 <button 
-                  onClick={() => { setTransferData({...transferData, category: 'machines', selectedItems: new Map()}); setTransferStep('items'); }}
-                  className="bg-white border-2 border-slate-100 p-8 rounded-[40px] flex flex-col items-center gap-3 active:scale-95 shadow-sm"
-                 >
-                   <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-                   </div>
-                   <span className="font-black text-xs uppercase tracking-widest text-slate-800">Machine Units</span>
-                 </button>
-               </div>
-             )}
-
-             {transferStep === 'items' && (
-               <div className="space-y-3">
-                 <div className="flex justify-between items-center mb-2 px-2">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Items for Batch</p>
-                   <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">{transferData.selectedItems.size} Selected</span>
-                 </div>
-                 {availableItems.map(item => {
-                   const isSelected = transferData.selectedItems.has(item.id);
-                   return (
-                     <button 
-                      key={item.id}
-                      onClick={() => toggleTransferItem(item.id)}
-                      className={`w-full p-4 rounded-[24px] border transition-all flex items-center justify-between active:scale-95 shadow-sm ${
-                        isSelected ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'
-                      }`}
-                     >
-                       <div className="text-left flex items-center gap-3">
-                         <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-200 bg-slate-50'}`}>
-                           {isSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}
-                         </div>
-                         <div>
-                           <p className={`font-bold text-sm ${isSelected ? 'text-indigo-900' : 'text-[#0f172a]'}`}>{item.name}</p>
-                           <p className="text-[9px] text-slate-400 font-bold uppercase">{transferData.category === 'parts' ? (item as Part).partId : (item as Machine).serialNumber}</p>
-                         </div>
-                       </div>
-                       <div className="text-right">
-                         <span className={`text-[10px] font-black ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`}>
-                           {transferData.category === 'parts' ? `${(item as Part).quantity} Available` : (item as Machine).condition}
-                         </span>
-                       </div>
-                     </button>
-                   );
-                 })}
-                 
-                 <div className="pt-8 pb-12 sticky bottom-0">
-                   <button 
-                    disabled={transferData.selectedItems.size === 0}
-                    onClick={() => setTransferStep(transferData.category === 'parts' ? 'quantities' : 'destination')}
-                    className="w-full bg-indigo-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 disabled:opacity-30 disabled:shadow-none"
-                   >
-                     Confirm Selection
-                   </button>
-                 </div>
-               </div>
-             )}
-
-             {transferStep === 'quantities' && (
-               <div className="space-y-4 animate-in zoom-in-95 duration-300 pb-24">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Adjust Transfer Quantities</p>
-                 {Array.from(transferData.selectedItems.entries()).map(([itemId, qty]) => {
-                   const partObj = parts.find(p => p.id === itemId);
-                   if (!partObj) return null;
-                   return (
-                     <div key={itemId} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-                       <div className="flex justify-between items-start">
-                         <div>
-                           <p className="font-black text-sm text-[#0f172a]">{partObj.name}</p>
-                           <p className="text-[10px] font-bold text-slate-400">Available: {partObj.quantity}</p>
-                         </div>
-                         <button onClick={() => toggleTransferItem(itemId)} className="text-red-400">
-                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                         </button>
-                       </div>
-                       <div className="flex items-center justify-between bg-slate-50 p-2 rounded-2xl">
-                          <button 
-                            onClick={() => updateTransferQty(itemId, Math.max(1, qty - 1))}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M20 12H4" /></svg>
-                          </button>
-                          <span className="text-2xl font-black text-indigo-600">{qty}</span>
-                          <button 
-                            onClick={() => updateTransferQty(itemId, Math.min(partObj.quantity, qty + 1))}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                          </button>
-                       </div>
-                     </div>
-                   );
-                 })}
-                 
-                 <button 
-                    onClick={() => setTransferStep('destination')}
-                    className="w-full bg-indigo-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100"
-                  >
-                    Lock Quantities
-                  </button>
-               </div>
-             )}
-
-             {transferStep === 'destination' && (
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 mb-4">Target Receiving Facility</p>
-                  {warehouses.filter(w => w.id !== transferData.sourceWH).map(w => (
-                    <button 
-                      key={w.id}
-                      onClick={() => { setTransferData({...transferData, destWH: w.id}); setTransferStep('notes'); }}
-                      className="w-full bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all"
-                    >
-                      <div className="text-left">
-                        <p className="font-bold text-[#0f172a]">{w.name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold">{w.location}</p>
-                      </div>
-                      <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                  ))}
-                </div>
-             )}
-
-             {transferStep === 'notes' && (
-               <div className="space-y-6 animate-in slide-in-from-bottom duration-300">
-                  <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-2 block">Transfer Reason / Logs</label>
-                    <textarea 
-                      placeholder="Reason for multi-item movement..."
-                      rows={6}
-                      className="w-full bg-transparent font-bold text-sm outline-none resize-none placeholder:text-slate-200"
-                      value={transferData.notes}
-                      onChange={e => setTransferData({...transferData, notes: e.target.value})}
-                    />
-                  </div>
-                  <button 
-                    onClick={() => setTransferStep('summary')}
-                    className="w-full bg-indigo-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100"
-                  >
-                    Review Batch Manifest
-                  </button>
-               </div>
-             )}
-
-             {transferStep === 'summary' && (
-               <div className="space-y-6 animate-in zoom-in-95 duration-300 pb-24">
-                  <div className="bg-indigo-900 rounded-[40px] p-8 text-white shadow-2xl">
-                     <div className="flex items-center gap-4 w-full mb-8">
-                        <div className="flex-1 text-center">
-                           <p className="text-[9px] font-black text-indigo-300 uppercase mb-1">Source</p>
-                           <p className="text-xs font-black truncate">{sourceWHObj?.name}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-indigo-800 flex items-center justify-center">
-                           <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                        </div>
-                        <div className="flex-1 text-center">
-                           <p className="text-[9px] font-black text-indigo-300 uppercase mb-1">Dest</p>
-                           <p className="text-xs font-black truncate">{destWHObj?.name}</p>
-                        </div>
-                     </div>
-                     
-                     <div className="space-y-3">
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest text-center">Batch Manifest</p>
-                        {Array.from(transferData.selectedItems.entries()).map(([itemId, qty]) => {
-                          const itemObj = transferData.category === 'parts' 
-                            ? parts.find(p => p.id === itemId)
-                            : machines.find(m => m.id === itemId);
-                          return (
-                            <div key={itemId} className="flex justify-between items-center py-2 border-b border-indigo-800/50 last:border-0">
-                               <div className="max-w-[70%]">
-                                  <p className="text-xs font-black uppercase truncate">{itemObj?.name}</p>
-                                  <p className="text-[9px] text-indigo-300 font-bold uppercase">{transferData.category === 'parts' ? (itemObj as Part)?.partId : (itemObj as Machine)?.serialNumber}</p>
-                               </div>
-                               <span className="text-sm font-black bg-indigo-800 px-3 py-1 rounded-lg">x{qty}</span>
-                            </div>
-                          );
-                        })}
-                     </div>
-                  </div>
-
-                  {transferData.linkedWorkOrderId && (
-                    <div className="p-6 bg-indigo-50 rounded-[32px] border border-indigo-100">
-                       <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-1">Linked Work Order</p>
-                       <p className="text-xs font-black text-indigo-900 truncate">
-                          {workOrders.find(wo => wo.id === transferData.linkedWorkOrderId)?.title}
-                       </p>
-                    </div>
-                  )}
-
-                  {transferData.notes && (
-                    <div className="p-6 bg-amber-50 rounded-[32px] border border-amber-100">
-                       <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Global Audit Note</p>
-                       <p className="text-xs font-bold text-slate-600 leading-relaxed italic">"{transferData.notes}"</p>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={handleTransferSubmit}
-                    className="w-full bg-emerald-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition-all mt-4"
-                  >
-                    Authorize Movement
-                  </button>
-               </div>
-             )}
-          </main>
-        </div>
-      );
-    }
-
-    if (outwardSubView !== 'selection') {
-      return (
-        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
-           <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
-              <button onClick={() => setOutwardSubView('selection')} className="text-indigo-600 font-black text-[10px] uppercase mb-2 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back to Selection
-              </button>
-              <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">{outwardSubView} Pending</h2>
-          </header>
-          <main className="flex-1 flex flex-col items-center justify-center px-8 text-center pb-32">
-            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
-              <svg className="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">System Updating</h3>
-            <p className="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest leading-relaxed">
-              Sub-module under development
-            </p>
-          </main>
-        </div>
-      );
-    }
-
-    return (
-      <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
-        <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
-          <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Outward Shipment</h2>
-          <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Logistics & Release</p>
-        </header>
-
-        <main className="flex-1 overflow-y-auto px-5 py-6 space-y-4 pb-32">
-          <div className="mb-4">
-             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Operational Type</h3>
-          </div>
-
-          <button 
-            onClick={() => setOutwardSubView('dispatch')}
-            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
-          >
-            <div className="w-14 h-14 bg-indigo-600 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-indigo-100 group-hover:rotate-6 transition-transform">
-               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-               </svg>
-            </div>
-            <div className="text-left">
-              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">1. Dispatch</span>
-              <span className="block text-[9px] font-bold text-indigo-500 uppercase mt-0.5">Handoff to Installer</span>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => { setOutwardSubView('transfer'); setTransferStep('workorder_link'); }}
-            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
-          >
-            <div className="w-14 h-14 bg-emerald-500 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-emerald-100 group-hover:-rotate-6 transition-transform">
-               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-               </svg>
-            </div>
-            <div className="text-left">
-              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">2. Bulk Transfer</span>
-              <span className="block text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Facility Rebalancing</span>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => setOutwardSubView('request')}
-            className="w-full bg-white border-2 border-slate-50 p-6 rounded-[32px] flex items-center gap-5 active:scale-95 transition-all shadow-sm group"
-          >
-            <div className="w-14 h-14 bg-amber-500 rounded-[22px] flex items-center justify-center text-white shadow-lg shadow-amber-100 group-hover:scale-110 transition-transform">
-               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-               </svg>
-            </div>
-            <div className="text-left">
-              <span className="block font-black text-sm uppercase tracking-tight text-slate-800">3. Request</span>
-              <span className="block text-[9px] font-bold text-amber-600 uppercase mt-0.5">Stock Replenishment</span>
-            </div>
-          </button>
-
-          <div className="mt-8 flex items-center gap-2 px-6 py-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none">Multi-select enabled for batching</span>
-          </div>
-        </main>
-      </div>
-    );
-  };
-
-  const renderIntake = () => {
-    if (isInventoryManager || isInstaller) return renderInstallerPlaceholder("Inventory Intake", "Asset Log");
-    
-    return (
-      <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
-        <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
-          <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Intake Operations</h2>
-          <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-0.5">Asset Registration</p>
-        </header>
-
-        <main className="flex-1 overflow-y-auto px-5 py-6 pb-32">
-          {intakeStep === 'warehouse' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <h3 className="text-sm font-black text-[#0f172a] mb-4 pl-1 uppercase tracking-tight">1. Select Facility</h3>
-              {assignedWarehouses.map(w => (
-                <button
-                  key={w.id}
-                  onClick={() => { setIntakeWarehouseId(w.id); setIntakeStep('type'); }}
-                  className="w-full bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all"
-                >
-                  <div className="text-left">
-                    <p className="font-bold text-[#0f172a]">{w.name}</p>
-                    <p className="text-[10px] text-slate-400 font-bold">{w.location}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {intakeStep === 'type' && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right duration-300">
-              <button onClick={() => setIntakeStep('warehouse')} className="text-emerald-600 font-black text-[10px] uppercase mb-2 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back
-              </button>
-              <h3 className="text-sm font-black text-[#0f172a] mb-4 pl-1 uppercase tracking-tight">2. Select Category</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <button 
-                  onClick={() => { setIntakeType('machine'); setIntakeStep('subtype'); }}
-                  className="bg-emerald-600 text-white p-6 rounded-[32px] shadow-xl shadow-emerald-100 flex flex-col items-center gap-3 active:scale-95 transition-all"
-                >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
-                  <span className="font-black text-xs uppercase tracking-widest">Machine Asset</span>
-                </button>
-                <button 
-                  onClick={() => { setIntakeType('part'); setIntakeStep('form'); }}
-                  className="bg-white text-slate-800 border-2 border-slate-100 p-6 rounded-[32px] shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-all"
-                >
-                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                  <span className="font-black text-xs uppercase tracking-widest text-slate-500">Stock (Parts)</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {intakeStep === 'subtype' && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right duration-300">
-               <button onClick={() => setIntakeStep('type')} className="text-emerald-600 font-black text-[10px] uppercase mb-2 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back
-              </button>
-              <h3 className="text-sm font-black text-[#0f172a] mb-4 pl-1 uppercase tracking-tight">3. Operation Type</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <button 
-                  onClick={() => { setMachineSubtype('Intake'); setIntakeStep('form'); }}
-                  className="bg-white border-2 border-slate-100 p-6 rounded-[32px] flex items-center justify-between active:scale-95 transition-all group"
-                >
-                  <div className="text-left">
-                    <span className="block font-black text-xs uppercase tracking-widest text-slate-700">Machine Intake</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">Registering New Assets</span>
-                  </div>
-                  <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                  </div>
-                </button>
-                <button 
-                  onClick={() => { setMachineSubtype('Return'); setIntakeStep('form'); }}
-                  className="bg-white border-2 border-slate-100 p-6 rounded-[32px] flex items-center justify-between active:scale-95 transition-all"
-                >
-                  <div className="text-left">
-                    <span className="block font-black text-xs uppercase tracking-widest text-slate-700">Machine Return</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">Returning From Field</span>
-                  </div>
-                  <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center text-orange-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {intakeStep === 'form' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right duration-300 pb-20">
-              <button onClick={() => intakeType === 'machine' ? setIntakeStep('subtype') : setIntakeStep('type')} className="text-emerald-600 font-black text-[10px] uppercase mb-2 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg> Back
-              </button>
-              
-              {intakeType === 'machine' ? (
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Machine Model</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. MegaSkill Pro"
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
-                      value={intakeMachineData.name}
-                      onChange={e => setIntakeMachineData({...intakeMachineData, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Serial Number</label>
-                    <input 
-                      type="text" 
-                      placeholder="Scan or Enter SN"
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
-                      value={intakeMachineData.serialNumber}
-                      onChange={e => setIntakeMachineData({...intakeMachineData, serialNumber: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Class</label>
-                      <select 
-                        className="w-full px-4 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-xs appearance-none"
-                        value={intakeMachineData.class}
-                        onChange={e => setIntakeMachineData({...intakeMachineData, class: e.target.value as any})}
-                      >
-                        <option value="Skill">Skill Game</option>
-                        <option value="ATM">ATM</option>
-                        <option value="Jukebox">Jukebox</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Condition</label>
-                      <select 
-                        className="w-full px-4 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-xs appearance-none"
-                        value={intakeMachineData.condition}
-                        onChange={e => setIntakeMachineData({...intakeMachineData, condition: e.target.value as any})}
-                      >
-                        <option value="New">New</option>
-                        <option value="Used">Used</option>
-                        <option value="Damaged">Damaged</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {machineSubtype === 'Return' && (
-                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Mark New Status</label>
-                        <select 
-                          className="w-full px-4 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-xs appearance-none"
-                          value={intakeMachineData.returnStatus}
-                          onChange={e => setIntakeMachineData({...intakeMachineData, returnStatus: e.target.value as any})}
-                        >
-                          <option value="Re-deploy">Re-deploy</option>
-                          <option value="Repair">Repair</option>
-                          <option value="Retire">Retire</option>
-                        </select>
-                      </div>
-                  )}
-
-                  <div className="pt-4 space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                      {machineSubtype === 'Intake' ? 'Intake Checklist' : 'Return Audit Checklist'}
-                    </h4>
-                    
-                    {(machineSubtype === 'Intake' ? [
-                      { label: "Physical Damage Inspection", key: "inspected" },
-                      { label: "Serial Label Readability", key: "serialReadable" },
-                      { label: "Successful Boot to Menu", key: "bootsToMenu" },
-                      { label: "Verification Photos Taken", key: "photosTaken" },
-                      { label: "Correct Storage Placement", key: "storedCorrectly" },
-                    ] : [
-                      { label: "Did machine match expected serial?", key: "serialMatch" },
-                      { label: "Was it inspected for damage?", key: "inspected" },
-                      { label: "Were photos taken to document return?", key: "photosTaken" },
-                      { label: "Was warehouse stock level adjusted?", key: "stockAdjusted" },
-                    ]).map(item => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setIntakeMachineData({
-                          ...intakeMachineData, 
-                          [item.key]: !intakeMachineData[item.key as keyof typeof intakeMachineData]
-                        })}
-                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                          intakeMachineData[item.key as keyof typeof intakeMachineData]
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold'
-                            : 'bg-white border-slate-100 text-slate-400 font-medium'
-                        }`}
-                      >
-                        <span className="text-xs">{item.label}</span>
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
-                          intakeMachineData[item.key as keyof typeof intakeMachineData] ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
-                        }`}>
-                          {intakeMachineData[item.key as keyof typeof intakeMachineData] && (
-                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="space-y-1.5 pt-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Intake Notes / Description</label>
-                    <textarea 
-                      placeholder="Add any specific observations or details..."
-                      rows={3}
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm resize-none"
-                      value={intakeMachineData.notes}
-                      onChange={e => setIntakeMachineData({...intakeMachineData, notes: e.target.value})}
-                    />
-                  </div>
-
-                  <button 
-                    onClick={handleCompleteIntake}
-                    className="w-full bg-emerald-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 mt-6 active:scale-95 transition-all"
-                  >
-                    Finish Registration
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Part Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Cash Cassette V3"
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
-                      value={intakePartData.name}
-                      onChange={e => setIntakePartData({...intakePartData, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Part ID / SKU</label>
-                    <input 
-                      type="text" 
-                      placeholder="Scan Part Code"
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
-                      value={intakePartData.partId}
-                      onChange={e => setIntakePartData({...intakePartData, partId: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity Added</label>
-                    <input 
-                      type="number" 
-                      placeholder="Quantity"
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
-                      value={intakePartData.quantity}
-                      onChange={e => setIntakePartData({...intakePartData, quantity: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-
-                  <div className="pt-4 space-y-3">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Compliance Checklist</h4>
-                    {[
-                      { label: "Part barcodes scanned and matched?", key: "barcodesScanned" },
-                      { label: "Count verified against shipment?", key: "countVerified" },
-                      { label: "Any damaged/missing items logged?", key: "damageLogged" },
-                      { label: "Stock count updated in system?", key: "countUpdated" },
-                    ].map(item => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setIntakePartData({
-                          ...intakePartData, 
-                          [item.key]: !intakePartData[item.key as keyof typeof intakePartData]
-                        })}
-                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                          intakePartData[item.key as keyof typeof intakePartData]
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold'
-                            : 'bg-white border-slate-100 text-slate-400 font-medium'
-                        }`}
-                      >
-                        <span className="text-xs">{item.label}</span>
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
-                          intakePartData[item.key as keyof typeof intakePartData] ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
-                        }`}>
-                          {intakePartData[item.key as keyof typeof intakePartData] && (
-                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-
-                    <div className="space-y-1.5 pt-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Restock Location</label>
-                      <select 
-                        className="w-full px-4 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-xs appearance-none shadow-sm"
-                        value={intakePartData.locationCorrect}
-                        onChange={e => setIntakePartData({...intakePartData, locationCorrect: e.target.value})}
-                      >
-                        <option value="Main Aisle">Main Aisle</option>
-                        <option value="Overflow Bin">Overflow Bin</option>
-                        <option value="Secured Locker">Secured Locker</option>
-                        <option value="Dispatch Rack">Dispatch Rack</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Stock Notes / Description</label>
-                    <textarea 
-                      placeholder="e.g. Received from Supplier X, minor box damage..."
-                      rows={3}
-                      className="w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm resize-none"
-                      value={intakePartData.notes}
-                      onChange={e => setIntakePartData({...intakePartData, notes: e.target.value})}
-                    />
-                  </div>
-                  <button 
-                    onClick={handleCompleteIntake}
-                    className="w-full bg-emerald-600 text-white py-5 rounded-[28px] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 mt-10 active:scale-95 transition-all"
-                  >
-                    Confirm Stock Update
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {intakeStep === 'success' && (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4 animate-in zoom-in-95 duration-300 py-12">
-               <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-8 animate-bounce mx-auto">
-                  <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
-               </div>
-               <h3 className="text-2xl font-black text-[#0f172a] uppercase tracking-tight">Record Established</h3>
-               <p className="text-slate-500 text-sm font-medium mt-2">Inventory updated successfully.</p>
-               <button 
-                onClick={resetIntake}
-                className="mt-12 w-full bg-slate-900 text-white py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
-               >
-                 Another Intake
-               </button>
-               <button 
-                onClick={() => { resetIntake(); setActiveMainTab('inventory'); }}
-                className="mt-4 text-emerald-600 font-black text-[10px] uppercase tracking-widest"
-               >
-                 Return to Facilities
-               </button>
             </div>
           )}
         </main>
@@ -1526,7 +677,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
 
         <main className="flex-1 overflow-y-auto px-5 py-6 pb-24">
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-[#0f172a] tracking-tight">Facilities</h2>
+            <h2 className="text-2xl font-black text-[#0f172a] tracking-tight">Warehouses</h2>
             <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-wider mt-0.5">Locations Assigned ({assignedWarehouses.length})</p>
           </div>
           <div className="space-y-4">
@@ -1642,6 +793,328 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
     );
   };
 
+  /**
+   * Renders the Intake workflow for recording new or returned assets.
+   * Handles warehouse selection, asset type, and detailed form entry with compliance checks.
+   */
+  const renderIntake = () => {
+    if (isInventoryManager || isInstaller) return renderInstallerPlaceholder("Intake Portal", "Warehouse Access Required");
+
+    if (intakeStep === 'success') {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Record Established</h2>
+          <p className="text-sm text-slate-400 font-medium mt-2">The asset has been successfully registered in the facility database.</p>
+          <button onClick={resetIntake} className="mt-10 w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100">Finish Intake</button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
+        <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+          <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Asset Intake</h2>
+          <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-0.5">Registry Workflow</p>
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-5 py-6 pb-32">
+          {intakeStep === 'warehouse' && (
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Select Arrival Facility</h3>
+              {assignedWarehouses.map(w => (
+                <button key={w.id} onClick={() => { setIntakeWarehouseId(w.id); setIntakeStep('type'); }} className="w-full p-5 bg-white border border-slate-100 rounded-[28px] text-left font-bold text-slate-800 shadow-sm active:scale-95 transition-all flex items-center justify-between">
+                  <span>{w.name}</span>
+                  <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {intakeStep === 'type' && (
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">What are you logging?</h3>
+              <button onClick={() => { setIntakeType('machine'); setIntakeStep('subtype'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                <p className="font-black text-slate-800 uppercase text-sm">Full Machine</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Skill, ATM, or Jukebox Unit</p>
+              </button>
+              <button onClick={() => { setIntakeType('part'); setIntakeStep('form'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                <p className="font-black text-slate-800 uppercase text-sm">Component / Parts</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Boards, Motors, Bill Validators</p>
+              </button>
+            </div>
+          )}
+
+          {intakeStep === 'subtype' && (
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Intake Reason</h3>
+              <button onClick={() => { setMachineSubtype('Intake'); setIntakeStep('form'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                <p className="font-black text-slate-800 uppercase text-sm">New Stock Arrival</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Direct from Manufacturer/Purchase</p>
+              </button>
+              <button onClick={() => { setMachineSubtype('Return'); setIntakeStep('form'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                <p className="font-black text-slate-800 uppercase text-sm">Venue Return</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Machine back from field operation</p>
+              </button>
+            </div>
+          )}
+
+          {intakeStep === 'form' && intakeType === 'machine' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+                <input type="text" placeholder="Model Name" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none" value={intakeMachineData.name} onChange={e => setIntakeMachineData({...intakeMachineData, name: e.target.value})} />
+                <input type="text" placeholder="Serial Number" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none" value={intakeMachineData.serialNumber} onChange={e => setIntakeMachineData({...intakeMachineData, serialNumber: e.target.value})} />
+                <div className="grid grid-cols-2 gap-2">
+                  <select className="px-3 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-[10px] uppercase" value={intakeMachineData.class} onChange={e => setIntakeMachineData({...intakeMachineData, class: e.target.value as any})}>
+                    <option value="Skill">Skill</option>
+                    <option value="ATM">ATM</option>
+                    <option value="Jukebox">Jukebox</option>
+                  </select>
+                  <select className="px-3 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-[10px] uppercase" value={intakeMachineData.condition} onChange={e => setIntakeMachineData({...intakeMachineData, condition: e.target.value as any})}>
+                    <option value="New">New</option>
+                    <option value="Used">Used</option>
+                    <option value="Damaged">Damaged</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Compliance Checklist</h3>
+                {['inspected', 'serialReadable', 'bootsToMenu', 'photosTaken', 'storedCorrectly'].map(key => (
+                  <button key={key} onClick={() => setIntakeMachineData({...intakeMachineData, [key]: !intakeMachineData[key as keyof typeof intakeMachineData]})} className="w-full p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{key.replace(/([A-Z])/g, ' $1')}</span>
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${intakeMachineData[key as keyof typeof intakeMachineData] ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'}`}>
+                      {intakeMachineData[key as keyof typeof intakeMachineData] && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={handleCompleteIntake} className="w-full py-5 bg-emerald-600 text-white rounded-[28px] font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 mt-4">Confirm Machine Intake</button>
+            </div>
+          )}
+
+          {intakeStep === 'form' && intakeType === 'part' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+                <input type="text" placeholder="Part Description" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none" value={intakePartData.name} onChange={e => setIntakePartData({...intakePartData, name: e.target.value})} />
+                <input type="text" placeholder="Part SKU / ID" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none" value={intakePartData.partId} onChange={e => setIntakePartData({...intakePartData, partId: e.target.value})} />
+                <input type="number" placeholder="Quantity" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none" value={intakePartData.quantity || ''} onChange={e => setIntakePartData({...intakePartData, quantity: parseInt(e.target.value) || 0})} />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Part Audit Checks</h3>
+                {['barcodesScanned', 'countVerified', 'damageLogged', 'countUpdated'].map(key => (
+                  <button key={key} onClick={() => setIntakePartData({...intakePartData, [key]: !intakePartData[key as keyof typeof intakePartData]})} className="w-full p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{key.replace(/([A-Z])/g, ' $1')}</span>
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${intakePartData[key as keyof typeof intakePartData] ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'}`}>
+                      {intakePartData[key as keyof typeof intakePartData] && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={handleCompleteIntake} className="w-full py-5 bg-emerald-600 text-white rounded-[28px] font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 mt-4">Complete Part Batch</button>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  };
+
+  /**
+   * Renders the Outward workflow for asset movements and transfers.
+   * Handles multi-item transfers between warehouses with work order linking.
+   */
+  const renderOutward = () => {
+    if (isInstaller) return renderInstallerPlaceholder("Outward Tasks", "Dispatch Queue");
+
+    if (outwardSubView === 'success') {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Transfer Manifest Sent</h2>
+          <p className="text-sm text-slate-400 font-medium mt-2">Asset location data updated. Receiving warehouse notified.</p>
+          <button onClick={resetTransfer} className="mt-10 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-100">Finish</button>
+        </div>
+      );
+    }
+
+    if (outwardSubView === 'selection') {
+      return (
+        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-bottom duration-500">
+          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+            <h2 className="text-xl font-black text-[#0f172a] tracking-tight uppercase">Outward Logs</h2>
+            <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-0.5">Asset Movements</p>
+          </header>
+          <main className="flex-1 overflow-y-auto px-5 py-6 space-y-4 pb-32">
+            <button onClick={() => { setOutwardSubView('transfer'); setTransferStep('workorder_link'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+              <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-4">
+                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+              </div>
+              <p className="font-black text-slate-800 uppercase text-sm">Warehouse Transfer</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Move stock between internal facilities</p>
+            </button>
+
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 pt-6">Recent Movements</h3>
+            <div className="space-y-3">
+               {movedAssets.slice(0, 10).map(item => (
+                 <div key={item.id} className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm flex items-center justify-between">
+                    <div>
+                       <p className="font-bold text-slate-800 text-xs">{item.name}</p>
+                       <p className="text-[8px] text-slate-400 font-black uppercase">{item.type === 'part' ? (item as any).partId : (item as any).serialNumber}</p>
+                    </div>
+                    <span className="text-[7px] font-black text-indigo-500 uppercase px-2 py-1 bg-indigo-50 rounded-lg tracking-widest">Moved</span>
+                 </div>
+               ))}
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    if (outwardSubView === 'transfer') {
+      return (
+        <div className="h-full flex flex-col bg-[#fcfdfe] animate-in slide-in-from-right duration-300">
+          <header className="px-5 pt-12 pb-5 bg-white border-b border-slate-100 sticky top-0 z-20">
+             <div className="flex items-center gap-3">
+                <button onClick={() => setOutwardSubView('selection')} className="p-2 -ml-2 text-slate-400"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg></button>
+                <div>
+                   <h2 className="text-lg font-black text-[#0f172a] uppercase leading-none">Transfer Setup</h2>
+                   <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest mt-1">Step: {transferStep.replace('_', ' ')}</p>
+                </div>
+             </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto px-5 py-6 pb-32">
+             {transferStep === 'workorder_link' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Link Service Order?</h3>
+                  <button onClick={() => setTransferStep('source')} className="w-full p-5 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-slate-100 mb-2 italic">Skip / No Link</button>
+                  {workOrders.filter(wo => wo.status !== 'Completed').map(wo => (
+                    <button key={wo.id} onClick={() => { setTransferData({...transferData, linkedWorkOrderId: wo.id}); setTransferStep('source'); }} className="w-full p-5 bg-white border border-slate-100 rounded-[28px] text-left shadow-sm active:scale-95 transition-all">
+                       <p className="font-black text-slate-800 uppercase text-[11px] mb-1">{wo.title}</p>
+                       <p className="text-[9px] text-slate-400 font-bold uppercase">ID: {wo.id}</p>
+                    </button>
+                  ))}
+               </div>
+             )}
+
+             {transferStep === 'source' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Select Source Facility</h3>
+                  {assignedWarehouses.map(w => (
+                    <button key={w.id} onClick={() => { setTransferData({...transferData, sourceWH: w.id}); setTransferStep('category'); }} className="w-full p-5 bg-white border border-slate-100 rounded-[28px] text-left font-bold text-slate-800 shadow-sm active:scale-95 transition-all">
+                      {w.name}
+                    </button>
+                  ))}
+               </div>
+             )}
+
+             {transferStep === 'category' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Category</h3>
+                  <button onClick={() => { setTransferData({...transferData, category: 'parts', selectedItems: new Map()}); setTransferStep('items'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                    <p className="font-black text-slate-800 uppercase text-sm">Spare Parts</p>
+                  </button>
+                  <button onClick={() => { setTransferData({...transferData, category: 'machines', selectedItems: new Map()}); setTransferStep('items'); }} className="w-full p-6 bg-white border border-slate-100 rounded-[32px] text-left shadow-sm active:scale-95 transition-all">
+                    <p className="font-black text-slate-800 uppercase text-sm">Full Machines</p>
+                  </button>
+               </div>
+             )}
+
+             {transferStep === 'items' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pick Items to Move</h3>
+                  {(transferData.category === 'parts' 
+                    ? parts.filter(p => p.warehouseId === transferData.sourceWH)
+                    : machines.filter(m => m.warehouseId === transferData.sourceWH)
+                  ).map(item => (
+                    <button key={item.id} onClick={() => toggleTransferItem(item.id)} className={`w-full p-5 border rounded-[28px] text-left shadow-sm transition-all flex items-center justify-between ${transferData.selectedItems.has(item.id) ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'}`}>
+                       <span className="font-bold text-slate-800 text-sm">{item.name}</span>
+                       {transferData.selectedItems.has(item.id) && <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                    </button>
+                  ))}
+                  <button disabled={transferData.selectedItems.size === 0} onClick={() => setTransferStep(transferData.category === 'parts' ? 'quantities' : 'destination')} className="w-full py-5 bg-indigo-600 text-white rounded-[28px] font-black text-[11px] uppercase tracking-widest mt-4 disabled:opacity-30">Next</button>
+               </div>
+             )}
+
+             {transferStep === 'quantities' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Set Quantities</h3>
+                  {[...transferData.selectedItems.keys()].map(id => {
+                    const part = parts.find(p => p.id === id);
+                    return (
+                      <div key={id} className="bg-white p-4 rounded-3xl border border-slate-100 flex items-center justify-between">
+                         <span className="font-bold text-xs text-slate-800">{part?.name}</span>
+                         <input type="number" className="w-20 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl font-black text-center" value={transferData.selectedItems.get(id)} onChange={e => updateTransferQty(id, parseInt(e.target.value) || 1)} />
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => setTransferStep('destination')} className="w-full py-5 bg-indigo-600 text-white rounded-[28px] font-black text-[11px] uppercase tracking-widest mt-4">Set Destination</button>
+               </div>
+             )}
+
+             {transferStep === 'destination' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Target Warehouse</h3>
+                  {warehouses.filter(w => w.id !== transferData.sourceWH).map(w => (
+                    <button key={w.id} onClick={() => { setTransferData({...transferData, destWH: w.id}); setTransferStep('notes'); }} className="w-full p-5 bg-white border border-slate-100 rounded-[28px] text-left font-bold text-slate-800 shadow-sm active:scale-95 transition-all">
+                      {w.name}
+                    </button>
+                  ))}
+               </div>
+             )}
+
+             {transferStep === 'notes' && (
+               <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Manifest Notes</h3>
+                  <textarea placeholder="Reason for transfer, handling instructions..." className="w-full px-6 py-5 bg-white border border-slate-100 rounded-[32px] font-bold text-sm outline-none shadow-sm resize-none" rows={4} value={transferData.notes} onChange={e => setTransferData({...transferData, notes: e.target.value})} />
+                  <button onClick={() => setTransferStep('summary')} className="w-full py-5 bg-indigo-600 text-white rounded-[28px] font-black text-[11px] uppercase tracking-widest mt-4 shadow-lg shadow-indigo-100">Review Summary</button>
+               </div>
+             )}
+
+             {transferStep === 'summary' && (
+                <div className="space-y-6">
+                   <div className="bg-white p-6 rounded-[40px] border border-slate-100 shadow-sm space-y-4">
+                      <div>
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Items To Transfer</p>
+                         <div className="space-y-1">
+                            {[...transferData.selectedItems.entries()].map(([id, qty]) => {
+                               const item = transferData.category === 'parts' ? parts.find(p => p.id === id) : machines.find(m => m.id === id);
+                               return <p key={id} className="text-xs font-black text-slate-800 tracking-tight">{qty}x {item?.name}</p>;
+                            })}
+                         </div>
+                      </div>
+                      <div className="pt-2 flex items-center gap-3">
+                         <div className="flex-1">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Source</p>
+                            <p className="text-xs font-bold text-slate-800">{warehouses.find(w => w.id === transferData.sourceWH)?.name}</p>
+                         </div>
+                         <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                         <div className="flex-1 text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Destination</p>
+                            <p className="text-xs font-bold text-slate-800">{warehouses.find(w => w.id === transferData.destWH)?.name}</p>
+                         </div>
+                      </div>
+                   </div>
+                   <button onClick={handleTransferSubmit} className="w-full py-6 bg-indigo-600 text-white rounded-[32px] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100">Authorize Transfer</button>
+                </div>
+             )}
+          </main>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const getNavColorClass = (tab: string) => {
     if (activeMainTab !== tab) return 'text-[#94a3b8]';
     if (isInstaller) return 'text-amber-500';
@@ -1669,7 +1142,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           <svg className="w-5 h-5" fill={activeMainTab === 'inventory' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span className="text-[7px] font-black uppercase tracking-tighter">{isInstaller ? 'Global Stock' : 'Facilities'}</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">{isInstaller ? 'Global Stock' : 'Warehouses'}</span>
         </button>
         
         {isInventoryManager ? (

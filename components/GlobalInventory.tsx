@@ -180,7 +180,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
             value={selectedWarehouseId}
             onChange={(e) => setSelectedWarehouseId(e.target.value)}
           >
-            <option value="All">All Facilities</option>
+            <option value="All">All Warehouses</option>
             {warehouses.map(w => (
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
@@ -196,7 +196,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
               <thead className="bg-gray-50/30">
                 <tr>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Part Identity</th>
-                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Facility</th>
+                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Warehouse</th>
                   <th className="px-8 py-6 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">In Stock</th>
                   <th className="px-8 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Audit Logs</th>
                 </tr>
@@ -241,7 +241,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
               <thead className="bg-gray-50/30">
                 <tr>
                   <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Model & Serial</th>
-                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Facility</th>
+                  <th className="px-8 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Warehouse</th>
                   <th className="px-8 py-6 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">Class</th>
                   <th className="px-8 py-6 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">Condition</th>
                   <th className="px-8 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Audit Logs</th>
@@ -308,7 +308,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
              {bulkStep === 'warehouse' ? (
                 <div className="space-y-6 animate-in slide-in-from-right duration-300">
                    <div className="space-y-3">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1">1. Select Target Facility</label>
+                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1">1. Select Target Warehouse</label>
                       <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                          {warehouses.map(w => (
                            <button 
@@ -366,7 +366,7 @@ const GlobalInventory: React.FC<GlobalInventoryProps> = ({
                     onClick={() => setBulkStep('warehouse')}
                     className="w-full py-2 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
                    >
-                     Change Target Facility
+                     Change Target Warehouse
                    </button>
                 </div>
              )}

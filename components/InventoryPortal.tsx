@@ -46,7 +46,7 @@ const InventoryPortal: React.FC<InventoryPortalProps> = ({ user, warehouses, onL
 
       <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
         <div className="mb-8">
-          <h2 className="text-3xl font-black text-gray-900">Assigned Facilities</h2>
+          <h2 className="text-3xl font-black text-gray-900">Assigned Warehouses</h2>
           <p className="text-gray-500 mt-1 font-medium">You have access to {assignedWarehouses.length} warehouse{assignedWarehouses.length !== 1 ? 's' : ''}</p>
         </div>
 

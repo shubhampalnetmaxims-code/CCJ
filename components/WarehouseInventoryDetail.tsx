@@ -140,7 +140,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Facility Network
+            Warehouse Network
           </button>
           <div className="flex items-center gap-4">
              <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">{warehouse.name}</h1>
@@ -275,7 +275,7 @@ const WarehouseInventoryDetail: React.FC<Props> = ({
                             { label: "Visual Inspection", key: "inspected" },
                             { label: "Serial Readability", key: "serialReadable" },
                             { label: "Boot Test", key: "bootsToMenu" },
-                            { label: "Photos Logged", key: "photosTaken" },
+                            { label: "Photo Evidence", key: "photosTaken" },
                             { label: "Storage Zone", key: "storedCorrectly" },
                         ]).map(item => (
                             <div key={item.key} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
